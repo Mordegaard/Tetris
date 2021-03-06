@@ -1,10 +1,14 @@
+.flexed {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 body {
   background: #282828;
   height: 100vh;
   margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  font: 24px Arial;
 }
 
 #canvas {
@@ -15,7 +19,7 @@ body {
   position: relative;
   margin-left: 30px;
   color: white;
-  font: 700 2em Arial;
+  font: 700 30px Arial;
   height: 600px;
 }
 
@@ -23,13 +27,139 @@ body {
   border: 4px solid white;
   width: 100px;
   height: 100px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 .info #score {
   position: absolute;
   top: 200px; left: 0;
   width: 200%;
+}
+
+#overflow {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  visibility: hidden;
+}
+#overflow.visible {
+  visibility: visible;
+}
+#overflow #overflowBlack {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+}
+#overflow .overflow {
+  background: #363636;
+  border-radius: 24px;
+  box-shadow: 3px 3px 30px -14px black;
+  color: white;
+  height: 400px;
+  padding: 25px 0px;
+  position: relative;
+  transform: translateY(-500px);
+  opacity: 0;
+  transition: transform 0.33s, opacity 0.33s;
+  overflow: hidden;
+}
+#overflow.visible .overflow {
+  transform: none;
+  opacity: 1;
+}
+#overflow .overflow .title {
+  position: absolute;
+  top: 12px; left: 0;
+  width: 100%;
+  text-align: center;
+}
+#overflow .newgame-container {
+  position: relative;
+  flex-direction: column;
+  padding: 50px 35px 0px 35px;
+  height: 100%; width: 400px;
+  justify-content: space-around;
+}
+#overflow .newgame-container .restart-container {
+  padding: 0px 35px 0px 35px;
+  width: 100%; height: 40px;
+  background: #4a4a4a;
+}
+#overflow .newgame-container .score-container {
+  height: 353px;
+}
+#overflow .newgame-container p {
+  font-size: 2em;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.33);
+  text-align: center;
+}
+#overflow .newgame-container #stats {
+  color: rgba(255,255,255,0.5);
+}
+#overflow button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  position: relative;
+}
+#overflow .leaderboard-container {
+  position: relative;
+  height: 100%;
+  padding: 50px 35px 0px 35px;
+  background: #5b5b5b;
+  flex-direction: column;
+}
+#overflow #leaderboard {
+  justify-content: start;
+  flex-direction: column;
+  height: 353px; width: 400px;
+  background: #4a4a4a;
+  padding: 4px 0px;
+  overflow: auto;
+}
+#overflow #leaderboard .player {
+  padding: 2px 4px;
+  background: #5b5b5b;
+  width: 90%;
+  justify-content: space-between;
+  margin: 4px 0px;
+}
+#overflow .leaderboard-container .addscore-container {
+  position: relative;
+  width: 100%; height: 40px;
+}
+#overflow #form {
+  position: absolute;
+  top: 50%; left: 0;
+  width: 100%;
+  transform: translateY(-50%);
+  visibility: hidden;
+}
+#overflow #form.visible {
+  visibility: visible;
+}
+#overflow #nick {
+  background: #343434;
+  border: none;
+  padding: 3px 6px;
+  color: white;
+  font-size: 20px;
+  width: 75%;
+}
+#overflow #sendResult {
+  width: 25%;
+  background: #424242;
+  border: none;
+  padding: 3px;
+  font-size: 20px;
+  color: white;
+}
+#overflow #addScore {
+  visibility: hidden;
+}
+#overflow #addScore.visible {
+  visibility: visible;
 }

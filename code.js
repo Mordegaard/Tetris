@@ -1,3 +1,16 @@
+var firebaseConfig = {
+    apiKey: "AIzaSyAP32_lqMymoNq6o0GnuTfvCzfomwDvbac",
+    authDomain: "mordegaard-blgspt.firebaseapp.com",
+    databaseURL: "https://mordegaard-blgspt.firebaseio.com",
+    projectId: "mordegaard-blgspt",
+    storageBucket: "mordegaard-blgspt.appspot.com",
+    messagingSenderId: "666333481438",
+    appId: "1:666333481438:web:30fee7393125fa23c2354f",
+    measurementId: "G-B56B297SCK"
+  };
+firebase.initializeApp(firebaseConfig);
+var database = firebase.database();
+
 window.onload = function() {
   document.body.focus();
   var canv = id("canvas"), preview = id("nextFigure");
@@ -12,7 +25,6 @@ window.onload = function() {
     data: null,
     speed: 333,
     originalSpeed: 333,
-    score: 0,
     blocks: [
       [[1,1,0],[0,1,1]],
       [[0,1,1],[1,1,0]],
@@ -33,9 +45,34 @@ window.onload = function() {
     nextBlock: null,
     colors: [
       "#e04654", "#f1c421", "#5b81ea", "#52cc52", "#d844d8", "blueviolet", "chartreuse"
-    ]
+    ],
+    stats: {
+      blocks: 0,
+      rows: 0,
+      score: 0,
+    }
   };
   tetris.nextBlock = randomInt(tetris.blocks.length);
+
+  function quickSort(arr) {
+    if (arr.length < 2) return arr;
+    let min = 1;
+    let max = arr.length - 1;
+    let rand = Math.floor(min + Math.random() * (max + 1 - min));
+    let pivot = arr[rand];
+    const left = [];
+    const right = [];
+    arr.splice(arr.indexOf(pivot), 1);
+    arr = [pivot].concat(arr);
+    for (let i = 1; i < arr.length; i++) {
+      if (pivot.score > arr[i].score) {
+        left.push(arr[i]);
+      } else {
+        right.push(arr[i]);
+      }
+    }
+    return quickSort(left).concat(pivot, quickSort(right));
+  }
 
   function rotateArray(matrix) {
     let result = [];
@@ -61,7 +98,6 @@ window.onload = function() {
   }
 
   document.addEventListener("keydown", function(e){
-    console.log(e.key);
     var block = false;
     if (e.key == "ArrowLeft" && tetris.x-tetris.block.w+tetris.block.hw > 0) {
       for (var y=0; y<tetris.block.h; y++) {
@@ -87,7 +123,8 @@ window.onload = function() {
       var block_h = block.length, block_w = block[0].length;
       for (var y=0; y<block_h; y++) {
         for (var x=0; x <block_w; x++) {
-          if (block[y][x] && (tetris.data[tetris.y-block_h+Math.floor(block_h/2)+y][tetris.x-block_w+Math.floor(block_w/2)+x] == 2 || tetris.data[tetris.y-block_h+Math.floor(block_h/2)+y][tetris.x-block_w+Math.floor(block_w/2)+x] == undefined)) rotate = false;
+          var X = tetris.x-block_w+Math.floor(block_w/2)+x, Y = tetris.y-Math.floor(block_h/2)+y;
+          if (block[y][x] && (tetris.data[Y][X] == 2 || tetris.data[Y][X] == undefined)) rotate = false;
         }
       }
       if (rotate) {
@@ -105,11 +142,6 @@ window.onload = function() {
       tetris.speed = tetris.originalSpeed;
     }
   });
-  tetris.data = new Array(tetris.height);
-  for (var i=0; i<tetris.height; i++) tetris.data[i] = new Array(tetris.width);
-  for (var y=0; y<tetris.height; y++) {
-    for (var x=0; x<tetris.width; x++) tetris.data[y][x] = 0;
-  }
 
   function draw() {
     ctx.clearRect(0,0,w,h);
@@ -124,6 +156,9 @@ window.onload = function() {
             ctx.fillStyle = "grey";
             //ctx.drawImage(bg, s*x*bgp_w, s*y*bgp_h, s*bgp_w, s*bgp_w, s*x, s*y, s, s);
             ctx.fillRect(s*x,s*y,s,s);
+          } else if (tetris.data[y][x] == 5) {
+            ctx.fillStyle = "#ffffff48";
+            ctx.fillRect(s*x,s*y,s,s);
           }
           ctx.drawImage(texture, s*x, s*y, s, s);
         }
@@ -133,6 +168,7 @@ window.onload = function() {
   }
 
   function initFigure() {
+    tetris.stats.blocks++;
     tetris.speed = tetris.originalSpeed;
     tetris.selectedBlock = tetris.nextBlock;
     tetris.nextBlock = randomInt(tetris.blocks.length);
@@ -147,11 +183,13 @@ window.onload = function() {
       for (var x=0; x<nX; x++) {
         if (tetris.blocks[tetris.nextBlock][y][x]) {
           prv.fillRect(x*20,y*20,20,20);
+          prv.drawImage(texture,x*20,y*20,20,20);
           prv.strokeRect(x*20,y*20,20,20);
         }
       }
     }
-    id("score").innerText = "Ваш счёт: " + tetris.score;
+    id("score").innerText = "Ваш счёт: " + tetris.stats.score;
+    var rows = 0;
     for (var y=0; y<tetris.height; y++) {
       var row = true;
       for (var x=0; x<tetris.width; x++) {
@@ -159,7 +197,11 @@ window.onload = function() {
         if (!tetris.data[y][x]) row = false;
       }
       if (row) {
-        tetris.score += 100;
+        tetris.stats.rows++;
+        rows++;
+        tetris.originalSpeed -= 2;
+        console.log(tetris.speed, tetris.originalSpeed);
+        tetris.stats.score += 50;
         for (var i=0; i<tetris.width; i++) tetris.data[y][i] = 0;
         for (var Y=y-1; Y>0; Y--) {
           for (var X=0; X<tetris.width; X++) {
@@ -170,11 +212,15 @@ window.onload = function() {
         }
       }
     }
+    if (rows > 1) tetris.stats.score += Math.floor(50 * (1+rows/5));
     for (var x=0; x<tetris.block.w; x++) {
       for (var y=0; y<tetris.block.h; y++) {
         if (tetris.block.data[y][x] == 1) tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x] = 1;
       }
-      if (tetris.data[tetris.y+tetris.block.hw][tetris.x-tetris.block.w+tetris.block.hw+x] == 2) {alert("Вы проиграли. Ваш счёт: " + (tetris.score-10)); location.reload(); return;}
+      if (tetris.data[tetris.y+tetris.block.hw][tetris.x-tetris.block.w+tetris.block.hw+x] == 2) {
+        endgame();
+        return;
+      }
     }
     draw();
     setTimeout(fall, tetris.speed);
@@ -204,18 +250,90 @@ window.onload = function() {
          return;
       }
     }
-    tetris.score += 10;
+    tetris.stats.score += 10;
     draw();
     initFigure();
     //setTimeout(initFigure, tetris.speed);
   }
 
+  function endgame() {
+    id("overflow").changeVisible(true);
+    id("overflowScore").innerText = tetris.stats.score;
+    updateScore();
+  }
+
+  function updateScore() {
+    id("leaderboard").innerHTML = "";
+    var index = 1;
+    id("stats").innerText = `
+    Всего фигур: ${tetris.stats.blocks}
+    Сбито строк: ${tetris.stats.rows}
+    `;
+    database.ref('tetris').once('value', function(snapshot) {
+      var data = snapshot.val();
+      if (data != null) {
+        var scores = [];
+        snapshot.forEach(function(cSnapshot) {
+          scores.push(cSnapshot.val());
+          /*var d = cSnapshot.val();
+          var block = document.createElement("div");
+          block.classList.add("player", "flexed");
+          block.innerHTML = `<span>${index++}. ${d.name}</span> <span>${d.score}</span>`;
+          id("leaderboard").append(block);*/
+        });
+        scores = quickSort(scores);
+        scores.forEach((d,ind)=>{
+          var block = document.createElement("div");
+          block.classList.add("player", "flexed");
+          block.innerHTML = `<span>${scores.length-index++ + 1}. ${d.name}</span> <span>${d.score}</span>`;
+          id("leaderboard").prepend(block);
+        });
+      }
+    });
+  }
+
+  function newgame() {
+    id("overflow").changeVisible(false);
+    id("addScore").changeVisible(true);
+    id("form").changeVisible(false);
+    tetris.stats.score = 0;
+    tetris.data = new Array(tetris.height);
+    for (var i=0; i<tetris.height; i++) tetris.data[i] = new Array(tetris.width);
+    for (var y=0; y<tetris.height; y++) {
+      for (var x=0; x<tetris.width; x++) tetris.data[y][x] = 0;
+    }
+    initFigure();
+  }
+
+  id("restart").onclick = newgame;
+  id("addScore").addEventListener("click", function(){
+    this.changeVisible(false);
+    id("form").changeVisible(true);
+  });
+  id("form").addEventListener("submit", function(e){
+    e.preventDefault();
+    console.log("HEY");
+    var score = tetris.stats.score;
+    var nick = id("nick").value;
+    if (nick) {
+      firebase.auth().signInAnonymously()
+      .then((user) => {
+        var usr = user.user.uid;
+        database.ref('tetris/'+usr).once('value', function(snapshot) {
+            database.ref('tetris/'+usr).set({
+              name: nick,
+              score: score,
+            });
+          });
+        }).then(updateScore);
+    }
+    return false;
+  });
+
   const texture =  new Image();
   const bg = new Image();
   texture.src = "texture.png";
-  bg.src = "bg.png";
-  texture.onload = initFigure;
-  bg.onload = function() {bgp_h = bg.height / h; bgp_w = bg.width / w;}
-
-  //initFigure();
+  //bg.src = "bg.png";
+  //bg.onload = function() {bgp_h = bg.height / h; bgp_w = bg.width / w;}
+  texture.onload = newgame;
 }

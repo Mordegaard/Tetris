@@ -1,6 +1,9 @@
 <!DOCTYPE html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <script src='https://www.gstatic.com/firebasejs/7.9.1/firebase-app.js'></script>
+    <script src='https://www.gstatic.com/firebasejs/7.9.1/firebase-database.js'></script>
+    <script src='https://www.gstatic.com/firebasejs/7.17.2/firebase-auth.js'></script>
     <script src="MRDGRD-lib.js" type="text/javascript"></script>
     <script src="code.js" type="text/javascript"></script>
     <link href="styles.css" rel="stylesheet"></link>
@@ -9,8 +12,33 @@
   <body class="flexed">
     <canvas width="300" height="600" id="canvas"></canvas>
     <div class="info">
-      <div class="preview"><canvas id="nextFigure"></canvas></div>
+      <div class="preview flexed"><canvas id="nextFigure"></canvas></div>
       <div id="score">0</div>
+    </div>
+    <div id="overflow" class="flexed">
+      <div id="overflowBlack"></div>
+      <div class="overflow flexed">
+        <div class="leaderboard-container flexed">
+          <span class="title">Таблица лидеров</span>
+          <div id="leaderboard" class="flexed">
+          </div>
+          <div class="addscore-container flexed">
+            <button id="addScore" class="visible">Добавить свой счёт</button>
+            <form id="form" class="flexed">
+              <input type="text" id="nick" onsubmit="submit()"/>
+              <input type="submit" id="sendResult" value="=>"/>
+            </form>
+          </div>
+        </div>
+        <div class="newgame-container flexed">
+          <span class="title">Ваш счёт</span>
+          <div class="score-container">
+            <p id="overflowScore"></p>
+            <span id="stats"></span>
+          </div>
+          <div class="restart-container flexed"><button id="restart">Заново</button></div>
+        </div>
+      </div>
     </div>
   </body>
 </html>

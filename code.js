@@ -111,7 +111,7 @@ window.onload = function() {
     }
     if ((e.key == "ArrowRight" || e.key == "d") && tetris.x+tetris.block.hw < tetris.width) {
       for (var y=0; y<tetris.block.h; y++) {
-        if (tetris.block.data[y][tetris.blocks.w-1] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x+tetris.block.hw] == 2) block = true;
+        if (tetris.block.data[y][tetris.block.w-1] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x+tetris.block.hw] == 2) block = true;
       }
       if (!block) {
         tetris.x++;
@@ -169,6 +169,7 @@ window.onload = function() {
   }
 
   function initFigure() {
+    var sound = true;
     tetris.stats.blocks++;
     tetris.speed = tetris.originalSpeed;
     tetris.selectedBlock = tetris.nextBlock;
@@ -198,6 +199,10 @@ window.onload = function() {
         if (!tetris.data[y][x]) row = false;
       }
       if (row) {
+        if (sound) {
+          sound = false;
+          sounds.files[randomInt(sounds.count)].play();
+        }
         tetris.stats.rows++;
         rows++;
         tetris.originalSpeed -= 2;
@@ -331,6 +336,26 @@ window.onload = function() {
     }
     return false;
   });
+
+  const sounds = {
+    files: [
+      new Audio(),
+      new Audio(),
+      new Audio(),
+      new Audio(),
+      new Audio(),
+      new Audio(),
+      new Audio(),
+    ],
+    count: 6,
+  }
+  sounds.files[0].src = "sounds/Boss in this gym.mp3";
+  sounds.files[1].src = "sounds/Its so fucking deep.mp3";
+  sounds.files[2].src = "sounds/Oh yes sir.mp3";
+  sounds.files[3].src = "sounds/Orgasm.mp3";
+  sounds.files[4].src = "sounds/Spank.mp3";
+  sounds.files[5].src = "sounds/Thats amazing.mp3";
+  sounds.files[6].src = "sounds/WOO.mp3";
 
   const texture =  new Image();
   const bg = new Image();

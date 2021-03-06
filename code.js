@@ -199,14 +199,13 @@ window.onload = function() {
         if (!tetris.data[y][x]) row = false;
       }
       if (row) {
-        if (sound) {
+        if (sound && sounds.enabled) {
           sound = false;
           sounds.files[randomInt(sounds.count)].play();
         }
         tetris.stats.rows++;
         rows++;
         tetris.originalSpeed -= 2;
-        console.log(tetris.speed, tetris.originalSpeed);
         tetris.stats.score += 50;
         for (var i=0; i<tetris.width; i++) tetris.data[y][i] = 0;
         for (var Y=y-1; Y>0; Y--) {
@@ -346,20 +345,35 @@ window.onload = function() {
       new Audio(),
       new Audio(),
       new Audio(),
+      new Audio(),
+      new Audio(),
     ],
-    count: 6,
+    count: 9,
+    enabled: false,
   }
-  sounds.files[0].src = "sounds/Boss in this gym.mp3";
-  sounds.files[1].src = "sounds/Its so fucking deep.mp3";
-  sounds.files[2].src = "sounds/Oh yes sir.mp3";
-  sounds.files[3].src = "sounds/Orgasm.mp3";
-  sounds.files[4].src = "sounds/Spank.mp3";
-  sounds.files[5].src = "sounds/Thats amazing.mp3";
-  sounds.files[6].src = "sounds/WOO.mp3";
+  sounds.files[0].src = "sounds/Its so fucking deep.mp3";
+  sounds.files[1].src = "sounds/Headshot.mp3";
+  sounds.files[2].src = "sounds/Spank.mp3";
+  sounds.files[3].src = "sounds/Thats amazing.mp3";
+  sounds.files[4].src = "sounds/hurt.mp3";
+  sounds.files[5].src = "sounds/unstoppable.mp3";
+  sounds.files[6].src = "sounds/hit.mp3";
+  sounds.files[7].src = "sounds/Double kill.mp3";
+  sounds.files[8].src = "sounds/WOO.mp3";
+
+  id("sound").addEventListener("click", function(){
+    if (sounds.enabled) {
+      sounds.enabled = false;
+      this.changeVisible(false);
+    } else {
+      sounds.enabled = true;
+      this.changeVisible(true);
+    }
+  });
 
   const texture =  new Image();
   const bg = new Image();
-  texture.src = "texture.png";
+  texture.src = "images/texture.png";
   //bg.src = "bg.png";
   //bg.onload = function() {bgp_h = bg.height / h; bgp_w = bg.width / w;}
   texture.onload = newgame;

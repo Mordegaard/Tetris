@@ -10,6 +10,7 @@ var firebaseConfig = {
   };
 firebase.initializeApp(firebaseConfig);
 var database = firebase.database();
+var speed = 333;
 
 window.onload = function() {
   document.body.focus();
@@ -23,8 +24,8 @@ window.onload = function() {
     x: 0,
     y: 0,
     data: null,
-    speed: 333,
-    originalSpeed: 333,
+    speed: speed,
+    originalSpeed: speed,
     blocks: [
       [[1,1,0],[0,1,1]],
       [[0,1,1],[1,1,0]],
@@ -99,25 +100,25 @@ window.onload = function() {
 
   document.addEventListener("keydown", function(e){
     var block = false;
-    if (e.key == "ArrowLeft" && tetris.x-tetris.block.w+tetris.block.hw > 0) {
+    if ((e.key == "ArrowLeft" || e.key == "a") && tetris.x-tetris.block.w+tetris.block.hw > 0) {
       for (var y=0; y<tetris.block.h; y++) {
-        if (tetris.data[tetris.y-tetris.block.hh+y][tetris.x+tetris.block.hw-tetris.block.w-1] == 2) block = true;
+        if (tetris.block.data[y][0] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x+tetris.block.hw-tetris.block.w-1] == 2) block = true;
       }
       if (!block) {
         tetris.x--;
         updateFrame();
       }
     }
-    if (e.key == "ArrowRight" && tetris.x+tetris.block.hw < tetris.width) {
+    if ((e.key == "ArrowRight" || e.key == "d") && tetris.x+tetris.block.hw < tetris.width) {
       for (var y=0; y<tetris.block.h; y++) {
-        if (tetris.data[tetris.y-tetris.block.hh+y][tetris.x+tetris.block.hw] == 2) block = true;
+        if (tetris.block.data[y][tetris.blocks.w-1] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x+tetris.block.hw] == 2) block = true;
       }
       if (!block) {
         tetris.x++;
         updateFrame();
       }
     }
-    if (e.key == "ArrowUp") {
+    if (e.key == "ArrowUp" || e.key == "w") {
       var rotate = true;
       var block = rotateArray(tetris.block.data);
       var block_h = block.length, block_w = block[0].length;
@@ -133,12 +134,12 @@ window.onload = function() {
         updateFrame();
       }
     }
-    if (e.key == "ArrowDown") {
+    if (e.key == "ArrowDown" || e.key == "s") {
       tetris.speed = tetris.originalSpeed / 10;
     }
   });
   document.addEventListener("keyup", function(e){
-    if (e.key == "ArrowDown") {
+    if (e.key == "ArrowDown" || e.key == "s") {
       tetris.speed = tetris.originalSpeed;
     }
   });
@@ -296,6 +297,7 @@ window.onload = function() {
     id("overflow").changeVisible(false);
     id("addScore").changeVisible(true);
     id("form").changeVisible(false);
+    tetris.originalSpeed = speed; tetris.speed = speed;
     tetris.stats.score = 0;
     tetris.data = new Array(tetris.height);
     for (var i=0; i<tetris.height; i++) tetris.data[i] = new Array(tetris.width);

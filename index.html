@@ -10,6 +10,20 @@
     <title>Tetris</title>
   </head>
   <body class="flexed">
+    <div class="catch-container">
+      <div class="catch flexed">
+        <canvas id="catchFigure"></canvas>
+      </div>
+      <div class="instructions">
+        <span>
+          W / ↑ - Повернуть фигуру на 90° за часовой стрелкой<br />
+          A / ← - Сдвинуть фигуру влево<br />
+          D / → - Сдвинуть фигуру вправо<br />
+          S / ↓ -  Ускорить падение фигуры<br />
+          Space - Захватить фигуру
+        </span>
+      </div>
+    </div>
     <canvas width="300" height="600" id="canvas"></canvas>
     <div class="info">
       <div class="preview flexed"><canvas id="nextFigure"></canvas></div>

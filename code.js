@@ -376,7 +376,7 @@ window.onload = function() {
     tetris.theEnd = true;
     id("overflow").changeVisible(true);
     id("overflowScore").innerText = tetris.stats.score;
-    if (tetris.stats.score >= 5000) {
+    if (tetris.stats.score >= 5000 && anime.enabled) {
       var src = bg.src.replace("https://rocky-retreat-60875.herokuapp.com/", "");
       id("imageContainer").changeVisible(true);
       id("image").src = bg.src;

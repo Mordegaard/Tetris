@@ -1,3 +1,8 @@
+@keyframes godrays {
+  from {transform: translate(-50%, -50%) rotate(0deg);}
+  to {transform: translate(-50%, -50%) rotate(360deg);}
+}
+
 .flexed {
   display: flex;
   justify-content: center;
@@ -9,6 +14,7 @@ body {
   height: 100vh;
   margin: 0;
   font: 24px Arial;
+  --col: rgb(120 120 120);
 }
 
 #canvas {
@@ -16,11 +22,21 @@ body {
 }
 
 .info, .catch-container {
-  position: relative;
-  margin: 0px 30px;
+  position: absolute;
+  top: 0;
   color: white;
   font: 700 30px Arial;
   height: 600px;
+}
+.info {
+  left: 110%;
+}
+.catch-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: flex-end;
+  right: 110%;
 }
 
 .info .preview, .catch-container .catch {
@@ -30,9 +46,7 @@ body {
 }
 
 .info #score {
-  position: absolute;
-  top: 200px; left: 0;
-  width: 200%;
+  margin: 20px 0px;
 }
 
 #overflow {
@@ -48,11 +62,10 @@ body {
   position: absolute;
   top: 0; left: 0;
   width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.75);
 }
 #overflow .overflow {
-  background: #363636;
-  border-radius: 24px;
+  position: relative;
   box-shadow: 3px 3px 30px -14px black;
   color: white;
   height: 400px;
@@ -61,7 +74,6 @@ body {
   transform: translateY(-500px);
   opacity: 0;
   transition: transform 0.33s, opacity 0.33s;
-  overflow: hidden;
 }
 #overflow.visible .overflow {
   transform: none;
@@ -76,9 +88,12 @@ body {
 #overflow .newgame-container {
   position: relative;
   flex-direction: column;
+  background: #363636;
+  border-radius: 0px 24px 24px 0px;
   padding: 50px 35px 0px 35px;
-  height: 100%; width: 400px;
+  height: 100%; width: 360px;
   justify-content: space-around;
+  overflow: hidden;
 }
 #overflow .newgame-container .restart-container {
   padding: 0px 35px 0px 35px;
@@ -92,12 +107,51 @@ body {
   font-size: 2em;
   padding: 2px 8px;
   border-radius: 12px;
-  background: rgba(255,255,255,0.33);
+  background: var(--col);
   text-align: center;
 }
 #overflow .newgame-container #stats {
   color: rgba(255,255,255,0.5);
 }
+
+#overflow .newgame-container .anime-container {
+  margin-top: 32px;
+  user-select: none;
+}
+#overflow .newgame-container .anime-container #anime {
+  width: 0.1px; height: 0.1px;
+  opacity: 0;
+}
+#overflow .newgame-container .anime-container div {
+  position: relative;
+  width: 32px; height: 32px;
+  background: #656565;
+}
+#overflow .newgame-container .anime-container div:before {
+  content: "";
+  position: absolute;
+  top: 45%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  width: 14px; height: 6px;
+  border-left: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+#overflow .newgame-container .anime-container #anime:checked + div {
+  background:var(--col);
+}
+#overflow .newgame-container .anime-container #anime:checked + div:before {
+  border-color: white;
+}
+#overflow .newgame-container .anime-container span {
+  padding: 0px 10px;
+  height: 30px;
+  border: 1px solid transparent;
+}
+#overflow .newgame-container .anime-container #anime:checked ~ span {
+  color: var(--col);
+  border-color: var(--col);
+}
+
 #overflow button {
   background: none;
   border: none;
@@ -105,17 +159,35 @@ body {
   font-size: 24px;
   position: relative;
 }
-#overflow .leaderboard-container {
+#overflow .leaderboard-container, #overflow .images-container {
   position: relative;
   height: 100%;
   padding: 50px 35px 0px 35px;
   background: #5b5b5b;
   flex-direction: column;
+  border-radius: 0px 0px 0px 24px;
+  display: none;
 }
+#overflow .images-container {
+  width: 520px;
+  justify-content: start;
+  padding: 50px 0px 0px 0px;
+  overflow: auto;
+}
+#overflow .images-container img {
+  max-width: 450px;
+}
+#overflow .leaderboard-container.visible {
+  display: initial;
+}
+#overflow .images-container.visible {
+  display: flex;
+}
+
 #overflow #leaderboard {
   justify-content: start;
   flex-direction: column;
-  height: 353px; width: 400px;
+  height: 353px; width: 450px;
   background: #4a4a4a;
   padding: 4px 0px;
   overflow: auto;
@@ -126,6 +198,12 @@ body {
   width: 90%;
   justify-content: space-between;
   margin: 4px 0px;
+}
+#overflow #leaderboard .player.your {
+  box-shadow: 4px 4px 8px -4px #282828;
+  font-weight: 700;
+  animation: transform 5s infinite linear;
+  background: var(--col);
 }
 #overflow .leaderboard-container .addscore-container {
   position: relative;
@@ -148,6 +226,7 @@ body {
   color: white;
   font-size: 20px;
   width: 75%;
+  transition: all 1s ease;
 }
 #overflow #sendResult {
   width: 25%;
@@ -182,15 +261,85 @@ body {
   display: none;
 }
 
-.catch-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: start;
-  align-items: flex-end;
-}
 .catch-container .instructions {
-  position: absolute;
-  top: 120px; width: 400px;
+  width: 400px;
+  margin-top: 20px;
   color: rgba(255,255,255,0.5);
   font-size: 0.5em;
+}
+
+#progressBar {
+  width: 100%; height: 8px;
+  margin-top: 2px;
+}
+#progressBar .progress-cell {
+  width: 20%; height: 100%;
+  margin: 0px 2px;
+  background: #4a4a4a;
+}
+#progressBar .progress-cell:first-child {
+  margin-left: 0;
+}
+#progressBar .progress-cell:last-child {
+  margin-right: 0;
+}
+#progressBar .progress-cell.visible {
+  background: var(--col);
+}
+
+.anime-canvas-container {
+  flex-direction: column;
+  visibility: hidden;
+}
+.anime-canvas-container.visible {
+  visibility: visible
+}
+#animeCanvas.visible {
+  box-shadow: 0px 0px 10px -2px var(--col);
+}
+
+#imageContainer {
+  display: none;
+  pointer-events: none;
+}
+#imageContainer.visible {
+  display: initial;
+}
+#imageContainer .godrays {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 1100px; height: 1100px;
+  transform: translate(-50%, -50%);
+  background: 50% 50% / 100% url("images/godrays.png");
+  animation: godrays 10s linear infinite;
+}
+#imageContainer #image{
+  position: absolute;
+  top: 50%; left: 50%;
+  max-width: 550px;
+  max-height: 700px;
+  transform: translate(-50%, -50%);
+}
+
+.folders-container {
+  position: absolute;
+  top: 0; left: 0px;
+  z-index: 0;
+}
+.folders-container .folder {
+  position: relative;
+  border-radius: 666px;
+  width: 200px;
+  padding: 8px 14px;
+  background: #4a4a4a;
+  margin-left: -80px;
+  box-shadow: -2px 2px 20px -10px black;
+  transition: margin 0.3s ease, background 0.3s ease;
+}
+.folders-container .folder:hover {
+  background: var(--col);
+  margin-left: -105px;
+}
+.folders-container .folder img {
+  width: 32px;
 }

@@ -14,10 +14,11 @@ var speed = 333;
 
 window.onload = function() {
   document.body.focus();
-  var canv = id("canvas"), preview = id("nextFigure"), ctch = id("catchFigure");
-  var ctx = canv.getContext('2d'), prv = preview.getContext('2d'), cat = ctch.getContext('2d');
+  var canv = id("canvas"), preview = id("nextFigure"), ctch = id("catchFigure"), animCanvas = id("animeCanvas");
+  var ctx = canv.getContext('2d'), prv = preview.getContext('2d'), cat = ctch.getContext('2d'), animCtx = animCanvas.getContext('2d');
   var w = canv.width, h = canv.height;
-  var bgp_w = null, bgp_h = null;
+  var bgW = null, bgH = null;
+  var progress = id("progressBar").children;
   const tetris = {
     width: 10,
     height: 20,
@@ -46,7 +47,7 @@ window.onload = function() {
     },
     nextBlock: null,
     colors: [
-      "#e04654", "#f1c421", "#5b81ea", "#52cc52", "#d844d8", "blueviolet", "chartreuse"
+      "#e04654", "#f1c421", "#5b81ea", "#52cc52", "#d844d8", "blueviolet", "#49bd92"
     ],
     catch: {
       index: undefined,
@@ -107,7 +108,6 @@ window.onload = function() {
   }
 
   function createBlock(ct = false) {
-    tetris.stats.blocks++;
     tetris.speed = tetris.originalSpeed;
     if (!ct) {
       tetris.block.index = tetris.nextBlock;
@@ -135,11 +135,13 @@ window.onload = function() {
     }
     for (var x=0; x<tetris.block.w; x++) {
       for (var y=0; y<tetris.block.h; y++) {
-        if (tetris.block.data[y][x] == 1) tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x] = 1;
-      }
-      if (tetris.data[tetris.y+tetris.block.hw][tetris.x-tetris.block.w+tetris.block.hw+x] == 2) {
-        endgame();
-        return;
+        if (tetris.block.data[y][x] == 1) {
+          tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x] = 1;
+          if (tetris.data[tetris.y+tetris.block.hw][tetris.x-tetris.block.w+tetris.block.hw+x] == 2) {
+            endgame();
+            return;
+          }
+        }
       }
     }
   }
@@ -194,7 +196,6 @@ window.onload = function() {
           }
         }
         createBlock();
-        console.log(tetris.data);
         draw();
       } else if (!tetris.catch.catched) {
         tetris.catch.catched = true;
@@ -237,9 +238,11 @@ window.onload = function() {
           ctx.strokeStyle = "white";
           if (tetris.data[y][x] == 1) {ctx.fillStyle = tetris.colors[tetris.block.index]; ctx.fillRect(s*x,s*y,s,s);}
           else if (tetris.data[y][x] == 2) {
-            ctx.fillStyle = "grey";
-            //ctx.drawImage(bg, s*x*bgp_w, s*y*bgp_h, s*bgp_w, s*bgp_w, s*x, s*y, s, s);
-            ctx.fillRect(s*x,s*y,s,s);
+            if (anime.enabled) ctx.drawImage(bg, bgW*s*x,bgH*s*y,bgW*s,bgH*s, s*x,s*y,s,s);
+            else {
+              ctx.fillStyle = "grey";
+              ctx.fillRect(s*x,s*y,s,s);
+              }
           } else if (tetris.data[y][x] == 5) {
             ctx.fillStyle = "#ffffff48";
             ctx.fillRect(s*x,s*y,s,s);
@@ -282,7 +285,23 @@ window.onload = function() {
       }
     }
     createBlock();
+    if (tetris.theEnd) return;
     if (rows > 1) tetris.stats.score += Math.floor(50 * (1+rows/2));
+    if (tetris.stats.blocks++) tetris.stats.score += 10;
+    if (tetris.stats.score > anime.progress*1000) {
+      anime.progress++;
+      for (var i=0; i<anime.progress-1; i++) {
+        if (i > progress.length-1) break;
+        progress[i].changeVisible(true);
+      }
+      if (tetris.stats.score < 5000) {
+        var step = (50 - Math.floor(tetris.stats.score / 100));
+        blur(step);
+      } else {
+        animCtx.drawImage(bg, 0, 0, animCanvas.width, animCanvas.height);
+        animCanvas.changeVisible(true);
+      }
+    }
     id("score").innerText = "Ваш счёт: " + tetris.stats.score;
     draw();
     setTimeout(fall, tetris.speed);
@@ -313,7 +332,6 @@ window.onload = function() {
          return;
       }
     }
-    tetris.stats.score += 10;
     draw();
     initFigure();
     //setTimeout(initFigure, tetris.speed);
@@ -321,31 +339,36 @@ window.onload = function() {
 
   function updateScore() {
     id("leaderboard").innerHTML = "";
-    var index = 1;
+    document.body.style.setProperty("--col", tetris.colors[randomInt(tetris.colors.length)]);
     id("stats").innerText = `
     Всего фигур: ${tetris.stats.blocks}
     Сбито строк: ${tetris.stats.rows}
     `;
     database.ref('tetris').once('value', function(snapshot) {
-      var data = snapshot.val();
-      if (data != null) {
-        var scores = [];
-        snapshot.forEach(function(cSnapshot) {
-          scores.push(cSnapshot.val());
-          /*var d = cSnapshot.val();
-          var block = document.createElement("div");
-          block.classList.add("player", "flexed");
-          block.innerHTML = `<span>${index++}. ${d.name}</span> <span>${d.score}</span>`;
-          id("leaderboard").append(block);*/
-        });
-        scores = quickSort(scores);
-        scores.forEach((d,ind)=>{
-          var block = document.createElement("div");
-          block.classList.add("player", "flexed");
-          block.innerHTML = `<span>${scores.length-index++ + 1}. ${d.name}</span> <span>${d.score}</span>`;
-          id("leaderboard").prepend(block);
-        });
-      }
+      firebase.auth().signInAnonymously()
+      .then((user) => {
+        var usr = user.user.uid;
+        var data = snapshot.val();
+        var index = 0;
+        if (data != null) {
+          var scores = [];
+          snapshot.forEach(function(cSnapshot) {
+            var obj = cSnapshot.val();
+            obj.key = Object.keys(data)[index++];
+            scores.push(obj);
+          });
+          scores = quickSort(scores);
+          scores.forEach((d,ind)=>{
+            var block = document.createElement("div");
+            block.classList.add("player", "flexed");
+            if (usr == d.key) {
+              block.classList.add("your");
+            }
+            block.innerHTML = `<span>${scores.length-ind}. ${d.name}</span> <span>${d.score}</span>`;
+            id("leaderboard").prepend(block);
+          });
+        };
+      });
     });
   }
 
@@ -353,18 +376,40 @@ window.onload = function() {
     tetris.theEnd = true;
     id("overflow").changeVisible(true);
     id("overflowScore").innerText = tetris.stats.score;
+    if (tetris.stats.score >= 5000) {
+      var src = bg.src.replace("https://rocky-retreat-60875.herokuapp.com/", "");
+      id("imageContainer").changeVisible(true);
+      id("image").src = bg.src;
+      anime.src.splice(anime.src.indexOf(src), 1);
+      if(!anime.opened.includes(src)) {
+        var href = document.createElement('a');
+        href.setAttribute("href", src); href.setAttribute("target", "_blank");
+        href.innerHTML = `<img src="${src}"/>`;
+        cl("images-container")[0].append(href);
+        anime.opened.push(bg.src);
+      }
+      setTimeout(()=>{id("imageContainer").changeVisible(false)}, 3000);
+    }
     updateScore();
   }
 
   function newgame() {
     tetris.theEnd = false;
+    animCtx.clearRect(0,0,animCanvas.width, animCanvas.height);
+    id("restart").innerText = "Заново";
     id("overflow").changeVisible(false);
     id("addScore").changeVisible(true);
     id("form").changeVisible(false);
+    animCanvas.changeVisible(false);
+    if (anime.enabled) cl("anime-canvas-container")[0].changeVisible(true);
+    else cl("anime-canvas-container")[0].changeVisible(false);
+    anime.progress = 1;
+    [].forEach.call(progress, el => {el.changeVisible(false)});
     tetris.originalSpeed = speed; tetris.speed = speed;
     tetris.stats.score = 0; tetris.stats.blocks = 0; tetris.stats.rows = 0;
     tetris.catch.index = undefined; tetris.catch.catch = false;
     tetris.data = new Array(tetris.height);
+    cat.clearRect(0, 0, ctch.width, ctch.height);
     for (var i=0; i<tetris.height; i++) tetris.data[i] = new Array(tetris.width);
     for (var y=0; y<tetris.height; y++) {
       for (var x=0; x<tetris.width; x++) tetris.data[y][x] = 0;
@@ -372,14 +417,117 @@ window.onload = function() {
     initFigure();
   }
 
-  id("restart").onclick = newgame;
+  function median(values){
+    if(values.length ===0) return 0;
+    values.sort(function(a,b){
+      return a-b;
+    });
+    var half = Math.floor(values.length / 2);
+    if (values.length % 2) return values[half];
+    return (values[half - 1] + values[half]) / 2.0;
+  }
+
+  function blur(width) {
+    animCtx.drawImage(bg,0,0,animCanvas.width,animCanvas.height);
+    var data = animCtx.getImageData(0, 0, animCanvas.width, animCanvas.height);
+    var d = data.data;
+    for (var i=0; i<animCanvas.height; i+=width) {
+      for (var j=0; j<animCanvas.width; j+=width) {
+        var ar = [], ag = [], ab = [];
+        for (var y=i; y<i+width; y++) {
+          if (y > animCanvas.height) break;
+          for (var x=j; x<j+width; x++) {
+            if (x > animCanvas.width) break;
+            ar.push(d[4*(animCanvas.width*y+x)+0]);
+            ag.push(d[4*(animCanvas.width*y+x)+1]);
+            ab.push(d[4*(animCanvas.width*y+x)+2]);
+          }
+        }
+        var r = median(ar), g = median(ag), b = median(ab);
+        for (var y=i; y<i+width; y++) {
+          if (y > animCanvas.height) break;
+          for (var x=j; x<j+width; x++) {
+            if (x >= animCanvas.width) break;
+            d[4*(animCanvas.width*y+x)+0] = r;
+            d[4*(animCanvas.width*y+x)+1] = g;
+            d[4*(animCanvas.width*y+x)+2] = b;
+          }
+        }
+      }
+    }
+    animCtx.putImageData(data, 0, 0);
+  }
+
+  const bg = new Image();
+  bg.crossOrigin = "Anonymous";
+  bg.onerror = function() {
+    if (bg.src.includes("herokuapp")) return;
+    else {bg.src = "https://rocky-retreat-60875.herokuapp.com/"+bg.src;}
+  }
+  bg.onload = function() {
+    bgW = bg.width / w; bgH = bg.height / h;
+    if(bg.width > bg.height) {
+      animCanvas.width = 400;
+      animCanvas.height = bg.height / bg.width * 400;
+    } else {
+      animCanvas.height = 400;
+      animCanvas.width = bg.width / bg.height * 400;
+    }
+    animCtx.drawImage(bg,0,0,animCanvas.width,animCanvas.height);
+    blur(50);
+  };
+
+  id("restart").onclick = function() {
+    if (anime.enabled) {
+      if (!anime.loaded || !anime.src.length) {
+        console.log("loading images")
+        var xhr = new XMLHttpRequest();
+        var url = 'https://www.reddit.com/r/hentai.json';
+        var num, array = [];
+        xhr.open('GET', url, true);
+        xhr.send();
+        xhr.onreadystatechange = function(res) {
+          var result = res.target.response;
+          try {
+            var json = JSON.parse(result);
+            Object.keys(json.data.children).forEach((el, ind, arr) => {
+              num = arr.length;
+              var obj = json.data.children[el];
+              if (obj.data.preview.enabled) {
+                var src = obj.data.preview.images[0].source.url.replace('amp;s', 's');
+                anime.src.push(src);
+              }
+            });
+            bg.src = anime.src[randomInt(anime.src.length)];
+            newgame();
+            anime.loaded = true;
+          } catch (e) {console.warn("can't load images");}
+        }
+      } else {
+        bg.src = anime.src[randomInt(anime.src.length)];
+        newgame();
+      }
+    } else newgame();
+  };
+
+  id("anime").addEventListener("input", function(){
+    anime.enabled = this.checked;
+  });
+
   id("addScore").addEventListener("click", function(){
     this.changeVisible(false);
     id("form").changeVisible(true);
   });
+  id("leaderboardFolder").addEventListener("click", function(){
+    cl("leaderboard-container")[0].changeVisible(true);
+    cl("images-container")[0].changeVisible(false);
+  });
+  id("imagesFolder").addEventListener("click", function(){
+    cl("leaderboard-container")[0].changeVisible(false);
+    cl("images-container")[0].changeVisible(true);
+  });
   id("form").addEventListener("submit", function(e){
     e.preventDefault();
-    var score = tetris.stats.score;
     var nick = id("nick").value;
     if (nick) {
       firebase.auth().signInAnonymously()
@@ -388,7 +536,7 @@ window.onload = function() {
         database.ref('tetris/'+usr).once('value', function(snapshot) {
             database.ref('tetris/'+usr).set({
               name: nick,
-              score: score,
+              score: tetris.stats.score,
             });
           });
         }).then(updateScore);
@@ -421,6 +569,14 @@ window.onload = function() {
   sounds.files[7].src = "sounds/Double kill.mp3";
   sounds.files[8].src = "sounds/WOO.mp3";
 
+  const anime = {
+    enabled: false,
+    src: [],
+    loaded: false,
+    progress: 1,
+    opened: [],
+  }
+
   id("sound").addEventListener("click", function(){
     if (sounds.enabled) {
       sounds.enabled = false;
@@ -432,9 +588,6 @@ window.onload = function() {
   });
 
   const texture =  new Image();
-  const bg = new Image();
   texture.src = "images/texture.png";
-  //bg.src = "bg.png";
-  //bg.onload = function() {bgp_h = bg.height / h; bgp_w = bg.width / w;}
-  texture.onload = newgame;
+  texture.onload = endgame;
 }

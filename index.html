@@ -10,6 +10,7 @@
     <title>Tetris</title>
   </head>
   <body class="flexed">
+    <div style="position: relative;">
     <div class="catch-container">
       <div class="catch flexed">
         <canvas id="catchFigure"></canvas>
@@ -28,11 +29,26 @@
     <div class="info">
       <div class="preview flexed"><canvas id="nextFigure"></canvas></div>
       <div id="score">0</div>
+      <div class="anime-canvas-container flexed">
+        <canvas id="animeCanvas" style="float: right;"></canvas>
+        <div id="progressBar" class="flexed">
+          <div class="progress-cell"></div>
+          <div class="progress-cell"></div>
+          <div class="progress-cell"></div>
+          <div class="progress-cell"></div>
+          <div class="progress-cell"></div>
+        </div>
+      </div>
     </div>
+  </div>
     <div id="overflow" class="flexed">
       <div id="overflowBlack"></div>
       <div class="overflow flexed">
-        <div class="leaderboard-container flexed">
+        <div class="folders-container">
+          <div id="leaderboardFolder" class="folder" style="z-index: 1;"><img src="images/cup.svg"/></div>
+          <div id="imagesFolder" class="folder" style="z-index: 0;"><img src="images/Anime.svg"/></div>
+        </div>
+        <div class="leaderboard-container flexed visible">
           <span class="title">Таблица лидеров</span>
           <div id="leaderboard" class="flexed">
           </div>
@@ -44,14 +60,22 @@
             </form>
           </div>
         </div>
+        <div class="images-container flexed">
+          <span class="title">Открытые изображения</span>
+        </div>
         <div class="newgame-container flexed">
           <span class="title">Ваш счёт</span>
           <div class="score-container">
             <p id="overflowScore"></p>
             <span id="stats"></span>
+            <label class="anime-container flexed"><input type="checkbox" id="anime"/><div></div><span>Hentai Mode</span></label>
           </div>
-          <div class="restart-container flexed"><button id="restart">Заново</button></div>
+          <div class="restart-container flexed"><button id="restart">Начать игру</button></div>
         </div>
+      </div>
+      <div id="imageContainer">
+        <div class="godrays"></div>
+        <img id="image"/>
       </div>
     </div>
     <div id="sound">

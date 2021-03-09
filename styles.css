@@ -336,6 +336,10 @@ body {
   box-shadow: -2px 2px 20px -10px black;
   transition: margin 0.3s ease, background 0.3s ease;
 }
+.folders-container .folder.visible {
+  background: #5b5b5b;
+  margin-left: -105px;
+}
 .folders-container .folder:hover {
   background: var(--col);
   margin-left: -105px;

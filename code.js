@@ -12,6 +12,28 @@ firebase.initializeApp(firebaseConfig);
 var database = firebase.database();
 var speed = 333;
 
+const anime = {
+  enabled: false,
+  src: [],
+  loaded: false,
+  progress: 1,
+  opened: [],
+};
+
+function UUDDLRLRBA() {
+  anime.src.forEach(src=>{
+    anime.src.splice(anime.src.indexOf(src), 1);
+    if(!anime.opened.includes(src)) {
+      var href = document.createElement('a');
+      href.setAttribute("href", src); href.setAttribute("target", "_blank");
+      href.innerHTML = `<img src="${src}"/>`;
+      cl("images-container")[0].append(href);
+      anime.opened.push(src);
+      return "ALL IMAGES ARE ADDED TO YOUR COLLECTION"
+    }
+  });
+};
+
 window.onload = function() {
   document.body.focus();
   var canv = id("canvas"), preview = id("nextFigure"), ctch = id("catchFigure"), animCanvas = id("animeCanvas");
@@ -151,7 +173,9 @@ window.onload = function() {
     //console.log(e.keyCode)
     if (!tetris.theEnd && (e.key == "ArrowLeft" || e.keyCode == 65) && tetris.x-tetris.block.w+tetris.block.hw > 0) {
       for (var y=0; y<tetris.block.h; y++) {
-        if (tetris.block.data[y][0] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x+tetris.block.hw-tetris.block.w-1] == 2) block = true;
+        for (var x=0; x<=tetris.block.w; x++) {
+          if (tetris.block.data[y][x] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x-1] == 2) block = true;
+        }
       }
       if (!block) {
         tetris.x--;
@@ -160,7 +184,9 @@ window.onload = function() {
     }
     if (!tetris.theEnd && (e.key == "ArrowRight" || e.keyCode == 68) && tetris.x+tetris.block.hw < tetris.width) {
       for (var y=0; y<tetris.block.h; y++) {
-        if (tetris.block.data[y][tetris.block.w-1] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x+tetris.block.hw] == 2) block = true;
+        for (var x=0; x<=tetris.block.w; x++) {
+          if (tetris.block.data[y][x] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x+1] == 2) block = true;
+        }
       }
       if (!block) {
         tetris.x++;
@@ -244,7 +270,7 @@ window.onload = function() {
               ctx.fillRect(s*x,s*y,s,s);
               }
           } else if (tetris.data[y][x] == 5) {
-            ctx.fillStyle = "#ffffff48";
+            ctx.fillStyle = "#ff000048";
             ctx.fillRect(s*x,s*y,s,s);
           }
           ctx.drawImage(texture, s*x, s*y, s, s);
@@ -386,7 +412,7 @@ window.onload = function() {
         href.setAttribute("href", src); href.setAttribute("target", "_blank");
         href.innerHTML = `<img src="${src}"/>`;
         cl("images-container")[0].append(href);
-        anime.opened.push(bg.src);
+        anime.opened.push(src);
       }
       setTimeout(()=>{id("imageContainer").changeVisible(false)}, 3000);
     }
@@ -465,6 +491,7 @@ window.onload = function() {
     else {bg.src = "https://rocky-retreat-60875.herokuapp.com/"+bg.src;}
   }
   bg.onload = function() {
+    newgame();
     bgW = bg.width / w; bgH = bg.height / h;
     if(bg.width > bg.height) {
       animCanvas.width = 400;
@@ -479,6 +506,7 @@ window.onload = function() {
 
   id("restart").onclick = function() {
     if (anime.enabled) {
+      this.innerText = "Загружаю изображения";
       if (!anime.loaded || !anime.src.length) {
         console.log("loading images")
         var xhr = new XMLHttpRequest();
@@ -499,13 +527,14 @@ window.onload = function() {
               }
             });
             bg.src = anime.src[randomInt(anime.src.length)];
-            newgame();
             anime.loaded = true;
-          } catch (e) {console.warn("can't load images");}
+          } catch (e) {
+            this.innerText = "Заново";
+            console.warn("can't load images");
+          }
         }
       } else {
         bg.src = anime.src[randomInt(anime.src.length)];
-        newgame();
       }
     } else newgame();
   };
@@ -521,10 +550,16 @@ window.onload = function() {
   id("leaderboardFolder").addEventListener("click", function(){
     cl("leaderboard-container")[0].changeVisible(true);
     cl("images-container")[0].changeVisible(false);
+
+    id("leaderboardFolder").changeVisible(true);
+    id("imagesFolder").changeVisible(false);
   });
   id("imagesFolder").addEventListener("click", function(){
     cl("leaderboard-container")[0].changeVisible(false);
     cl("images-container")[0].changeVisible(true);
+
+    id("leaderboardFolder").changeVisible(false);
+    id("imagesFolder").changeVisible(true);
   });
   id("form").addEventListener("submit", function(e){
     e.preventDefault();
@@ -568,14 +603,6 @@ window.onload = function() {
   sounds.files[6].src = "sounds/hit.mp3";
   sounds.files[7].src = "sounds/Double kill.mp3";
   sounds.files[8].src = "sounds/WOO.mp3";
-
-  const anime = {
-    enabled: false,
-    src: [],
-    loaded: false,
-    progress: 1,
-    opened: [],
-  }
 
   id("sound").addEventListener("click", function(){
     if (sounds.enabled) {

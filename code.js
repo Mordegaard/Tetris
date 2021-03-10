@@ -37,7 +37,10 @@ function UpdCol() {
 window.onload = function() {
   document.body.focus();
   var canv = id("canvas"), preview = id("nextFigure"), ctch = id("catchFigure"), animCanvas = id("animeCanvas");
-  var ctx = canv.getContext('2d'), prv = preview.getContext('2d'), cat = ctch.getContext('2d'), animCtx = animCanvas.getContext('2d');
+  var ctx = canv.getContext('2d', {antialias: false, alpha: false}),
+      prv = preview.getContext('2d', {antialias: false, alpha: false}),
+      cat = ctch.getContext('2d', {antialias: false, alpha: false}),
+      animCtx = animCanvas.getContext('2d', {antialias: false, alpha: false});
   var w = canv.width, h = canv.height;
   var bgW = null, bgH = null;
   var progress = id("progressBar").children;
@@ -145,7 +148,8 @@ window.onload = function() {
     tetris.x = tetris.width / 2; tetris.y = tetris.block.hh;
     var nX = tetris.blocks[tetris.nextBlock][0].length, nY = tetris.blocks[tetris.nextBlock].length;
     preview.width = nX * 20; preview.height = nY * 20;
-    prv.clearRect(0,0,preview.width,preview.height);
+    prv.fillStyle = "#282828";
+    prv.fillRect(0,0,preview.width,preview.height);
     prv.strokeStyle = "white"; prv.fillStyle = tetris.colors[tetris.nextBlock];
     for (var y=0; y<nY; y++) {
       for (var x=0; x<nX; x++) {
@@ -236,7 +240,8 @@ window.onload = function() {
       }
       var nX = tetris.blocks[tetris.catch.index][0].length, nY = tetris.blocks[tetris.catch.index].length;
       ctch.width = nX * 20; ctch.height = nY * 20;
-      cat.clearRect(0,0,ctch.width,ctch.height);
+      cat.fillStyle = "#282828";
+      cat.fillRect(0,0,ctch.width,ctch.height);
       cat.strokeStyle = "white"; cat.fillStyle = tetris.colors[tetris.catch.index];
       for (var y=0; y<nY; y++) {
         for (var x=0; x<nX; x++) {
@@ -256,7 +261,8 @@ window.onload = function() {
   });
 
   function draw() {
-    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = "#282828";
+    ctx.fillRect(0,0,w,h);
     var s = w / tetris.width;
     for (var x=0; x<tetris.width; x++) {
       for (var y=0; y<tetris.height; y++) {
@@ -364,12 +370,11 @@ window.onload = function() {
   function updateScore() {
     id("leaderboard").innerHTML = "";
     document.body.style.setProperty("--col", tetris.colors[randomInt(tetris.colors.length)]);
-    tetris.stats.time = (Date.now() - tetris.stats.time) / 1000;
-    var m = Math.floor(tetris.stats.score / 60);
+    tetris.stats.time = Math.floor((Date.now() - tetris.stats.time) / 1000);
+    var m = Math.floor(tetris.stats.time / 60);
     if (m < 10) m = '0'+m;
-    var s = tetris.stats.score % 60;
+    var s = tetris.stats.time % 60;
     if (s < 10) s = '0'+s;
-    console.log(tetris.stats.score, m, s);
     id("stats").innerText = `
     Всего фигур: ${tetris.stats.blocks}
     Сбито строк: ${tetris.stats.rows}
@@ -427,7 +432,8 @@ window.onload = function() {
   function newgame() {
     tetris.theEnd = false;
     tetris.stats.time = Date.now();
-    animCtx.clearRect(0,0,animCanvas.width, animCanvas.height);
+    animCtx.fillStyle = "#282828";
+    animCtx.fillRect(0,0,animCanvas.width, animCanvas.height);
     id("restart").innerText = "Заново";
     id("overflow").changeVisible(false);
     id("addScore").changeVisible(true);
@@ -441,7 +447,8 @@ window.onload = function() {
     tetris.stats.score = 0; tetris.stats.blocks = 0; tetris.stats.rows = 0;
     tetris.catch.index = undefined; tetris.catch.catch = false;
     tetris.data = new Array(tetris.height);
-    cat.clearRect(0, 0, ctch.width, ctch.height);
+    cat.fillStyle = "#282828";
+    cat.fillRect(0, 0, ctch.width, ctch.height);
     for (var i=0; i<tetris.height; i++) tetris.data[i] = new Array(tetris.width);
     for (var y=0; y<tetris.height; y++) {
       for (var x=0; x<tetris.width; x++) tetris.data[y][x] = 0;

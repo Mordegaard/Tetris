@@ -20,7 +20,7 @@ const anime = {
   opened: [],
 };
 
-function UUDDLRLRBA() {
+function UpdCol() {
   anime.src.forEach(src=>{
     anime.src.splice(anime.src.indexOf(src), 1);
     if(!anime.opened.includes(src)) {
@@ -29,7 +29,7 @@ function UUDDLRLRBA() {
       href.innerHTML = `<img src="${src}"/>`;
       cl("images-container")[0].append(href);
       anime.opened.push(src);
-      return "ALL IMAGES ARE ADDED TO YOUR COLLECTION"
+      return true;
     }
   });
 };
@@ -69,7 +69,7 @@ window.onload = function() {
     },
     nextBlock: null,
     colors: [
-      "#e04654", "#f1c421", "#5b81ea", "#52cc52", "#d844d8", "blueviolet", "#49bd92"
+      "#e04654", "#f1c421", "#5b81ea", "#52cc52", "#d844d8", "blueviolet", "#e87944"
     ],
     catch: {
       index: undefined,
@@ -79,6 +79,7 @@ window.onload = function() {
       blocks: 0,
       rows: 0,
       score: 0,
+      time: Date.now(),
     },
     mode: {
       hentai: false,
@@ -159,7 +160,7 @@ window.onload = function() {
       for (var y=0; y<tetris.block.h; y++) {
         if (tetris.block.data[y][x] == 1) {
           tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x] = 1;
-          if (tetris.data[tetris.y+tetris.block.hw][tetris.x-tetris.block.w+tetris.block.hw+x] == 2) {
+          if (tetris.data[tetris.y+tetris.block.hw][tetris.x-tetris.block.w+tetris.block.hw+x] > 1) {
             endgame();
             return;
           }
@@ -174,7 +175,7 @@ window.onload = function() {
     if (!tetris.theEnd && (e.key == "ArrowLeft" || e.keyCode == 65) && tetris.x-tetris.block.w+tetris.block.hw > 0) {
       for (var y=0; y<tetris.block.h; y++) {
         for (var x=0; x<=tetris.block.w; x++) {
-          if (tetris.block.data[y][x] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x-1] == 2) block = true;
+          if (tetris.block.data[y][x] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x-1] > 1) block = true;
         }
       }
       if (!block) {
@@ -185,7 +186,7 @@ window.onload = function() {
     if (!tetris.theEnd && (e.key == "ArrowRight" || e.keyCode == 68) && tetris.x+tetris.block.hw < tetris.width) {
       for (var y=0; y<tetris.block.h; y++) {
         for (var x=0; x<=tetris.block.w; x++) {
-          if (tetris.block.data[y][x] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x+1] == 2) block = true;
+          if (tetris.block.data[y][x] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x+1] > 1) block = true;
         }
       }
       if (!block) {
@@ -200,7 +201,7 @@ window.onload = function() {
       for (var y=0; y<block_h; y++) {
         for (var x=0; x <block_w; x++) {
           var X = tetris.x-block_w+Math.floor(block_w/2)+x, Y = tetris.y-Math.floor(block_h/2)+y;
-          if (block[y][x] && (tetris.data[Y][X] == 2 || tetris.data[Y][X] == undefined)) rotate = false;
+          if (block[y][x] && (tetris.data[Y][X] > 1 || tetris.data[Y][X] == undefined)) rotate = false;
         }
       }
       if (rotate) {
@@ -259,19 +260,16 @@ window.onload = function() {
     var s = w / tetris.width;
     for (var x=0; x<tetris.width; x++) {
       for (var y=0; y<tetris.height; y++) {
-        ctx.strokeStyle = "rgba(255,255,255,0.2)";
+        ctx.strokeStyle = "#3d3d3d";
         if (tetris.data[y][x]) {
           ctx.strokeStyle = "white";
           if (tetris.data[y][x] == 1) {ctx.fillStyle = tetris.colors[tetris.block.index]; ctx.fillRect(s*x,s*y,s,s);}
-          else if (tetris.data[y][x] == 2) {
+          else if (tetris.data[y][x] > 1) {
             if (anime.enabled) ctx.drawImage(bg, bgW*s*x,bgH*s*y,bgW*s,bgH*s, s*x,s*y,s,s);
             else {
-              ctx.fillStyle = "grey";
+              ctx.fillStyle = tetris.colors[tetris.data[y][x]-2];
               ctx.fillRect(s*x,s*y,s,s);
-              }
-          } else if (tetris.data[y][x] == 5) {
-            ctx.fillStyle = "#ff000048";
-            ctx.fillRect(s*x,s*y,s,s);
+            }
           }
           ctx.drawImage(texture, s*x, s*y, s, s);
         }
@@ -288,7 +286,7 @@ window.onload = function() {
     for (var y=0; y<tetris.height; y++) {
       var row = true;
       for (var x=0; x<tetris.width; x++) {
-        if (tetris.data[y][x] == 1) tetris.data[y][x] = 2;
+        if (tetris.data[y][x] == 1) tetris.data[y][x] = 2 + tetris.block.index;
         if (!tetris.data[y][x]) row = false;
       }
       if (row) {
@@ -303,8 +301,8 @@ window.onload = function() {
         for (var i=0; i<tetris.width; i++) tetris.data[y][i] = 0;
         for (var Y=y-1; Y>0; Y--) {
           for (var X=0; X<tetris.width; X++) {
-            if (tetris.data[Y][X] == 2) {
-              tetris.data[Y][X] = 0; tetris.data[Y+1][X] = 2;
+            if (tetris.data[Y][X] > 1) {
+              tetris.data[Y+1][X] = tetris.data[Y][X]; tetris.data[Y][X] = 0;
             }
           }
         }
@@ -339,7 +337,7 @@ window.onload = function() {
     if (tetris.y+tetris.block.h-tetris.block.hh<tetris.height) {
       for (var y=0; y<tetris.block.h; y++) {
         for (var x=0; x<tetris.block.w; x++) {
-          if (tetris.data[tetris.y-tetris.block.hh+y+1][tetris.x-tetris.block.w+tetris.block.hw+x] == 2 && tetris.block.data[y][x]) block = true;
+          if (tetris.data[tetris.y-tetris.block.hh+y+1][tetris.x-tetris.block.w+tetris.block.hw+x] > 1 && tetris.block.data[y][x]) block = true;
         }
       }
       if (!block) {
@@ -366,9 +364,16 @@ window.onload = function() {
   function updateScore() {
     id("leaderboard").innerHTML = "";
     document.body.style.setProperty("--col", tetris.colors[randomInt(tetris.colors.length)]);
+    tetris.stats.time = (Date.now() - tetris.stats.time) / 1000;
+    var m = Math.floor(tetris.stats.score / 60);
+    if (m < 10) m = '0'+m;
+    var s = tetris.stats.score % 60;
+    if (s < 10) s = '0'+s;
+    console.log(tetris.stats.score, m, s);
     id("stats").innerText = `
     Всего фигур: ${tetris.stats.blocks}
     Сбито строк: ${tetris.stats.rows}
+    Время игры: ${m}:${s}
     `;
     database.ref('tetris').once('value', function(snapshot) {
       firebase.auth().signInAnonymously()
@@ -421,6 +426,7 @@ window.onload = function() {
 
   function newgame() {
     tetris.theEnd = false;
+    tetris.stats.time = Date.now();
     animCtx.clearRect(0,0,animCanvas.width, animCanvas.height);
     id("restart").innerText = "Заново";
     id("overflow").changeVisible(false);

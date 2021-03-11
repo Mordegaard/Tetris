@@ -170,14 +170,31 @@ body {
   display: none;
 }
 #overflow .images-container {
-  width: 520px;
-  justify-content: start;
-  padding: 50px 0px 0px 0px;
+  padding: 50px 15px 0px 15px;
+  width: 490px;
   overflow: auto;
 }
-#overflow .images-container img {
-  max-width: 450px;
+#overflow .images-container #images {
+  display: flex;
+  width: 100%; height: 100%;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
+#overflow .images-container a {
+  position: relative;
+  width: 112px; height: 112px;
+  margin: 3px;
+}
+#overflow .images-container a .remove-image-btn {
+  opacity: 0;
+  position: absolute;
+  top: -12px; right: -12px;
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  background: red;
+}
+#overflow .images-container a:hover {z-index: 10;}
+#overflow .images-container a:hover .remove-image-btn {opacity: 1;}
 #overflow .leaderboard-container.visible {
   display: initial;
 }

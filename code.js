@@ -11,6 +11,9 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var database = firebase.database();
 var speed = 333;
+var usr;
+firebase.auth().signInAnonymously()
+.then((user) => {usr = user.user.uid});
 
 const anime = {
   enabled: false,
@@ -18,20 +21,58 @@ const anime = {
   loaded: false,
   progress: 1,
   opened: [],
+  db: false,
 };
 
-function UpdCol() {
-  anime.src.forEach(src=>{
-    anime.src.splice(anime.src.indexOf(src), 1);
-    if(!anime.opened.includes(src)) {
-      var href = document.createElement('a');
-      href.setAttribute("href", src); href.setAttribute("target", "_blank");
-      href.innerHTML = `<img src="${src}"/>`;
-      cl("images-container")[0].append(href);
-      anime.opened.push(src);
-      return true;
-    }
+function appendImage(src) {
+  var href = document.createElement('a');
+  href.setAttribute("href", src); href.setAttribute("target", "_blank");
+  href.style.background = `50% 50% / cover url("${src}")`;
+  href.innerHTML = `<img src="images/times.svg" class="remove-image-btn"/>`;
+  id("images").append(href);
+  href.tag("img")[0].addEventListener("click", function(e){
+    e.preventDefault();
+    var index, ent;
+    database.ref('tetris/'+usr+'/images').once('value', snapshot => {
+      var obj = snapshot.val(); ent = Object.entries(obj);
+      for (const [key, val] of ent) {
+        if (val == src) {
+          index = parseInt(key); console.log(index);
+          for (var i=index; i<ent.length-1; i++) {
+            database.ref('tetris/'+usr+'/images').update({
+              [i]: ent[i+1][1]
+            });
+          }
+          break;
+        }
+      }
+    }).then(()=>{
+      console.log(index);
+      if (index != undefined) {
+        anime.opened.splice(anime.opened.indexOf(src), 1);
+        cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
+        id("images").children[index].remove();
+        database.ref('tetris/'+usr+'/images/'+ent[ent.length-1][0]).remove();
+      }
+    });
   });
+}
+
+function addImage(src) {
+  anime.src.splice(anime.src.indexOf(src), 1);
+  if(!anime.opened.includes(src)) {
+    appendImage(src);
+    var num = anime.opened.length;
+    anime.opened.push(src);
+    cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
+    database.ref('tetris/'+usr+'/images').update({
+      [num]: src,
+    });
+  }
+}
+
+function UpdCol() {
+  while (anime.src != false) addImage(anime.src[0]);
 };
 
 window.onload = function() {
@@ -381,9 +422,6 @@ window.onload = function() {
     Время игры: ${m}:${s}
     `;
     database.ref('tetris').once('value', function(snapshot) {
-      firebase.auth().signInAnonymously()
-      .then((user) => {
-        var usr = user.user.uid;
         var data = snapshot.val();
         var index = 0;
         if (data != null) {
@@ -403,10 +441,17 @@ window.onload = function() {
             block.innerHTML = `<span>${scores.length-ind}. ${d.name}</span> <span>${d.score}</span>`;
             id("leaderboard").prepend(block);
           });
+          if (!anime.db && data[usr] && data[usr].images) {
+            for (const [key, val] of Object.entries(data[usr].images)) {
+              anime.opened.push(val);
+            }
+            cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
+            anime.opened.forEach(appendImage);
+          }
+          anime.db = true;
         };
       });
-    });
-  }
+    }
 
   function endgame() {
     tetris.theEnd = true;
@@ -415,15 +460,8 @@ window.onload = function() {
     if (tetris.stats.score >= 5000 && anime.enabled) {
       var src = bg.src.replace("https://rocky-retreat-60875.herokuapp.com/", "");
       id("imageContainer").changeVisible(true);
-      id("image").src = bg.src;
-      anime.src.splice(anime.src.indexOf(src), 1);
-      if(!anime.opened.includes(src)) {
-        var href = document.createElement('a');
-        href.setAttribute("href", src); href.setAttribute("target", "_blank");
-        href.innerHTML = `<img src="${src}"/>`;
-        cl("images-container")[0].append(href);
-        anime.opened.push(src);
-      }
+      id("image").src = src;
+      addImage(src);
       setTimeout(()=>{id("imageContainer").changeVisible(false)}, 3000);
     }
     updateScore();
@@ -444,7 +482,7 @@ window.onload = function() {
     anime.progress = 1;
     [].forEach.call(progress, el => {el.changeVisible(false)});
     tetris.originalSpeed = speed; tetris.speed = speed;
-    tetris.stats.score = 0; tetris.stats.blocks = 0; tetris.stats.rows = 0;
+    tetris.stats.score = 4990; tetris.stats.blocks = 0; tetris.stats.rows = 0;
     tetris.catch.index = undefined; tetris.catch.catch = false;
     tetris.data = new Array(tetris.height);
     cat.fillStyle = "#282828";
@@ -578,16 +616,12 @@ window.onload = function() {
     e.preventDefault();
     var nick = id("nick").value;
     if (nick) {
-      firebase.auth().signInAnonymously()
-      .then((user) => {
-        var usr = user.user.uid;
         database.ref('tetris/'+usr).once('value', function(snapshot) {
-            database.ref('tetris/'+usr).set({
-              name: nick,
-              score: tetris.stats.score,
-            });
-          });
-        }).then(updateScore);
+          database.ref('tetris/'+usr).update({
+            name: nick,
+            score: tetris.stats.score,
+        });
+      }).then(updateScore);
     }
     return false;
   });

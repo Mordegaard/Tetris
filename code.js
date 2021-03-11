@@ -482,7 +482,7 @@ window.onload = function() {
     anime.progress = 1;
     [].forEach.call(progress, el => {el.changeVisible(false)});
     tetris.originalSpeed = speed; tetris.speed = speed;
-    tetris.stats.score = 4990; tetris.stats.blocks = 0; tetris.stats.rows = 0;
+    tetris.stats.score = 0; tetris.stats.blocks = 0; tetris.stats.rows = 0;
     tetris.catch.index = undefined; tetris.catch.catch = false;
     tetris.data = new Array(tetris.height);
     cat.fillStyle = "#282828";

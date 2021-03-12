@@ -37,7 +37,7 @@ function appendImage(src) {
       var obj = snapshot.val(); ent = Object.entries(obj);
       for (const [key, val] of ent) {
         if (val == src) {
-          index = parseInt(key); console.log(index);
+          index = parseInt(key);
           for (var i=index; i<ent.length-1; i++) {
             database.ref('tetris/'+usr+'/images').update({
               [i]: ent[i+1][1]
@@ -47,7 +47,6 @@ function appendImage(src) {
         }
       }
     }).then(()=>{
-      console.log(index);
       if (index != undefined) {
         anime.opened.splice(anime.opened.indexOf(src), 1);
         cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
@@ -246,13 +245,27 @@ window.onload = function() {
       for (var y=0; y<block_h; y++) {
         for (var x=0; x <block_w; x++) {
           var X = tetris.x-block_w+Math.floor(block_w/2)+x, Y = tetris.y-Math.floor(block_h/2)+y;
-          if (block[y][x] && (tetris.data[Y][X] > 1 || tetris.data[Y][X] == undefined)) rotate = false;
+          if (block[y][x] && (tetris.data[Y][X] > 1 || tetris.data[Y][X] == undefined)) {rotate = false;}
         }
       }
       if (rotate) {
         tetris.block.data = block;
         tetris.block.w = block_w, tetris.block.h = block_h, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
         updateFrame();
+      } else {
+        rotate = true;
+        for (var y=0; y<block_h; y++) {
+          for (var x=0; x <block_w; x++) {
+            var X = tetris.x-block_w+Math.floor(block_w/2)+x+1, Y = tetris.y-Math.floor(block_h/2)+y;
+            if (block[y][x] && (tetris.data[Y][X] > 1 || tetris.data[Y][X] == undefined)) {rotate = false;}
+          }
+        }
+        if (rotate) {
+          tetris.block.data = block;
+          tetris.x++;
+          tetris.block.w = block_w, tetris.block.h = block_h, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
+          updateFrame();
+        }
       }
     }
     if (e.key == "ArrowDown" || e.keyCode == 83) {
@@ -411,7 +424,9 @@ window.onload = function() {
   function updateScore() {
     id("leaderboard").innerHTML = "";
     document.body.style.setProperty("--col", tetris.colors[randomInt(tetris.colors.length)]);
+    console.log("milliseconds ON start: " + tetris.stats.time);
     tetris.stats.time = Math.floor((Date.now() - tetris.stats.time) / 1000);
+    console.log("seconds FROM start: " + tetris.stats.time);
     var m = Math.floor(tetris.stats.time / 60);
     if (m < 10) m = '0'+m;
     var s = tetris.stats.time % 60;
@@ -637,8 +652,9 @@ window.onload = function() {
       new Audio(),
       new Audio(),
       new Audio(),
+      new Audio(),
     ],
-    count: 9,
+    count: 10,
     enabled: false,
   }
   sounds.files[0].src = "sounds/Its so fucking deep.mp3";
@@ -648,8 +664,9 @@ window.onload = function() {
   sounds.files[4].src = "sounds/hurt.mp3";
   sounds.files[5].src = "sounds/unstoppable.mp3";
   sounds.files[6].src = "sounds/hit.mp3";
-  sounds.files[7].src = "sounds/Double kill.mp3";
-  sounds.files[8].src = "sounds/WOO.mp3";
+  sounds.files[7].src = "sounds/tanks.m4a";
+  sounds.files[8].src = "sounds/slidan.m4a";
+  sounds.files[9].src = "sounds/WOO.mp3";
 
   id("sound").addEventListener("click", function(){
     if (sounds.enabled) {

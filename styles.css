@@ -283,7 +283,7 @@ body {
   width: 400px;
   margin-top: 20px;
   color: rgba(255,255,255,0.5);
-  font-size: 0.5em;
+  font-size: 16px;
 }
 
 #progressBar {
@@ -364,4 +364,18 @@ body {
 }
 .folders-container .folder img {
   width: 32px;
+}
+
+#credits {
+  position: absolute;
+  bottom: 10px; left: 10px;
+  color: rgba(255,255,255,0.25);
+  font-size: 16px;
+}
+#credits a {
+  color: white;
+  text-decoration: none;
+}
+#credits img {
+  height: 1em;
 }

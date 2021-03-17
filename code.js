@@ -61,12 +61,13 @@ function appendImage(src) {
 function addImage(src) {
   anime.src.splice(anime.src.indexOf(src), 1);
   if(!anime.opened.includes(src)) {
-    appendImage(src);
+    var s = src.replace("https://rocky-retreat-60875.herokuapp.com/", "");
+    appendImage(s);
     var num = anime.opened.length;
     anime.opened.push(src);
     cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
     database.ref('tetris/'+usr+'/images').update({
-      [num]: src,
+      [num]: s,
     });
   }
 }

@@ -11,6 +11,7 @@ var firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 var database = firebase.database();
 var speed = 333;
+var timer;
 var usr;
 firebase.auth().signInAnonymously()
 .then((user) => {usr = user.user.uid});
@@ -122,7 +123,7 @@ window.onload = function() {
       blocks: 0,
       rows: 0,
       score: 0,
-      time: Date.now(),
+      time: 0,
     },
     mode: {
       hentai: false,
@@ -224,6 +225,7 @@ window.onload = function() {
       }
       if (!block) {
         tetris.x--;
+        getFinalPosition();
         updateFrame();
       }
     }
@@ -235,6 +237,7 @@ window.onload = function() {
       }
       if (!block) {
         tetris.x++;
+        getFinalPosition();
         updateFrame();
       }
     }
@@ -251,6 +254,7 @@ window.onload = function() {
       if (rotate) {
         tetris.block.data = block;
         tetris.block.w = block_w, tetris.block.h = block_h, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
+        getFinalPosition();
         updateFrame();
       } else {
         rotate = true;
@@ -264,6 +268,7 @@ window.onload = function() {
           tetris.block.data = block;
           tetris.x++;
           tetris.block.w = block_w, tetris.block.h = block_h, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
+          getFinalPosition();
           updateFrame();
         }
       }
@@ -369,6 +374,7 @@ window.onload = function() {
       }
     }
     createBlock();
+    getFinalPosition();
     if (tetris.theEnd) return;
     if (rows > 1) tetris.stats.score += Math.floor(50 * (1+rows/2));
     if (tetris.stats.blocks++) tetris.stats.score += 10;
@@ -389,6 +395,26 @@ window.onload = function() {
     id("score").innerText = "Ваш счёт: " + tetris.stats.score;
     draw();
     setTimeout(fall, tetris.speed);
+    }
+  }
+
+  function getFinalPosition() {
+    for (var y=0; y<tetris.height; y++) {
+      for (var x=0; x<tetris.width; x++) {
+        if (tetris.data[y][x] == -1) tetris.data[y][x] = 0;
+      }
+    }
+    loop1: for (var Y=tetris.y; Y<tetris.height-tetris.block.h+tetris.block.hh; Y++) {
+      for (var y=0; y<tetris.block.h; y++) {
+        for (var x=0; x<tetris.block.w; x++) {
+          if (tetris.data[Y-tetris.block.hh+y+1][tetris.x-tetris.block.w+tetris.block.hw+x] > 1 && tetris.block.data[y][x]) {break loop1;}
+        }
+      }
+    }
+    for (var x=0; x<tetris.block.w; x++) {
+      for (var y=0; y<tetris.block.h; y++) {
+        if (tetris.block.data[y][x] == 1) tetris.data[Y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x] = -1;
+      }
     }
   }
 
@@ -424,8 +450,7 @@ window.onload = function() {
   function updateScore() {
     id("leaderboard").innerHTML = "";
     document.body.style.setProperty("--col", tetris.colors[randomInt(tetris.colors.length)]);
-    console.log("milliseconds ON start: " + tetris.stats.time);
-    tetris.stats.time = Math.floor((Date.now() - tetris.stats.time) / 1000);
+    clearInterval(timer);
     console.log("seconds FROM start: " + tetris.stats.time);
     var m = Math.floor(tetris.stats.time / 60);
     if (m < 10) m = '0'+m;
@@ -484,7 +509,9 @@ window.onload = function() {
 
   function newgame() {
     tetris.theEnd = false;
-    tetris.stats.time = Date.now();
+    timer = setInterval(()=>{
+      tetris.stats.time++;
+    }, 1000);
     animCtx.fillStyle = "#282828";
     animCtx.fillRect(0,0,animCanvas.width, animCanvas.height);
     id("restart").innerText = "Заново";
@@ -605,6 +632,20 @@ window.onload = function() {
     } else newgame();
   };
 
+  function submitScore(e) {
+    e.preventDefault();
+    var nick = id("nick").value;
+    if (nick) {
+        database.ref('tetris/'+usr).once('value', function(snapshot) {
+          database.ref('tetris/'+usr).update({
+            name: nick,
+            score: tetris.stats.score,
+        });
+      }).then(updateScore);
+    }
+    return false;
+  }
+
   id("anime").addEventListener("input", function(){
     anime.enabled = this.checked;
   });
@@ -627,19 +668,8 @@ window.onload = function() {
     id("leaderboardFolder").changeVisible(false);
     id("imagesFolder").changeVisible(true);
   });
-  id("form").addEventListener("submit", function(e){
-    e.preventDefault();
-    var nick = id("nick").value;
-    if (nick) {
-        database.ref('tetris/'+usr).once('value', function(snapshot) {
-          database.ref('tetris/'+usr).update({
-            name: nick,
-            score: tetris.stats.score,
-        });
-      }).then(updateScore);
-    }
-    return false;
-  });
+  id("form").addEventListener("submit", submitScore);
+  id("sendResult").addEventListener("click", submitScore);
 
   const sounds = {
     files: [

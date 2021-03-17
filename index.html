@@ -45,7 +45,7 @@
       </div>
     </div>
   </div>
-    <div id="overflow" class="flexed">
+    <div id="overflow" class="flexed visible">
       <div id="overflowBlack"></div>
       <div class="overflow flexed">
         <div class="folders-container">
@@ -59,8 +59,9 @@
           <div class="addscore-container flexed">
             <button id="addScore" class="visible">Добавить свой счёт</button>
             <form id="form" class="flexed">
-              <input type="text" id="nick" onsubmit="submit()"/>
-              <input type="submit" id="sendResult" value="=>"/>
+              <input type="text" id="nick"/>
+              <!--<input type="submit" id="sendResult" value="=>"/>-->
+              <button id="sendResult"><img src="images/share.svg"/></button>
             </form>
           </div>
         </div>

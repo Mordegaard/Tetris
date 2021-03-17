@@ -286,6 +286,7 @@ window.onload = function() {
           }
         }
         createBlock();
+        getFinalPosition();
         draw();
       } else if (!tetris.catch.catched) {
         tetris.catch.catched = true;
@@ -295,6 +296,7 @@ window.onload = function() {
           }
         }
         createBlock(true);
+        getFinalPosition();
         draw();
       }
       var nX = tetris.blocks[tetris.catch.index][0].length, nY = tetris.blocks[tetris.catch.index].length;
@@ -326,7 +328,7 @@ window.onload = function() {
     for (var x=0; x<tetris.width; x++) {
       for (var y=0; y<tetris.height; y++) {
         ctx.strokeStyle = "#3d3d3d";
-        if (tetris.data[y][x]) {
+        if (tetris.data[y][x] > 0) {
           ctx.strokeStyle = "white";
           if (tetris.data[y][x] == 1) {ctx.fillStyle = tetris.colors[tetris.block.index]; ctx.fillRect(s*x,s*y,s,s);}
           else if (tetris.data[y][x] > 1) {
@@ -337,6 +339,8 @@ window.onload = function() {
             }
           }
           ctx.drawImage(texture, s*x, s*y, s, s);
+        } else if (tetris.data[y][x] < 0) {
+          ctx.drawImage(texture2, s*x, s*y, s, s);
         }
         ctx.strokeRect(s*x,s*y,s,s);
       }
@@ -509,6 +513,7 @@ window.onload = function() {
 
   function newgame() {
     tetris.theEnd = false;
+    tetris.stats.time = 0;
     timer = setInterval(()=>{
       tetris.stats.time++;
     }, 1000);
@@ -580,6 +585,7 @@ window.onload = function() {
   const bg = new Image();
   bg.crossOrigin = "Anonymous";
   bg.onerror = function() {
+    console.clear();
     if (bg.src.includes("herokuapp")) return;
     else {bg.src = "https://rocky-retreat-60875.herokuapp.com/"+bg.src;}
   }
@@ -616,14 +622,14 @@ window.onload = function() {
               var obj = json.data.children[el];
               if (obj.data.preview.enabled) {
                 var src = obj.data.preview.images[0].source.url.replace('amp;s', 's');
-                anime.src.push(src);
+                anime.src.push("https://rocky-retreat-60875.herokuapp.com/"+src);
               }
             });
             bg.src = anime.src[randomInt(anime.src.length)];
             anime.loaded = true;
           } catch (e) {
             this.innerText = "Заново";
-            console.warn("can't load images");
+            console.warn("Some errors have appeared while loading images");
           }
         }
       } else {
@@ -709,6 +715,8 @@ window.onload = function() {
   });
 
   const texture =  new Image();
+  const texture2 = new Image();
   texture.src = "images/texture.png";
+  texture2.src = "images/texture2.png";
   texture.onload = endgame;
 }

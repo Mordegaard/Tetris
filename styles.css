@@ -205,6 +205,7 @@ body {
 #overflow #leaderboard {
   justify-content: start;
   flex-direction: column;
+  text-align: center;
   height: 353px; width: 450px;
   background: #4a4a4a;
   padding: 4px 0px;
@@ -216,6 +217,7 @@ body {
   width: 90%;
   justify-content: space-between;
   margin: 4px 0px;
+  text-align: left;
 }
 #overflow #leaderboard .player.your {
   box-shadow: 4px 4px 8px -4px #282828;

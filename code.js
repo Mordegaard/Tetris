@@ -1,20 +1,23 @@
-var firebaseConfig = {
-    apiKey: "AIzaSyAP32_lqMymoNq6o0GnuTfvCzfomwDvbac",
-    authDomain: "mordegaard-blgspt.firebaseapp.com",
-    databaseURL: "https://mordegaard-blgspt.firebaseio.com",
-    projectId: "mordegaard-blgspt",
-    storageBucket: "mordegaard-blgspt.appspot.com",
-    messagingSenderId: "666333481438",
-    appId: "1:666333481438:web:30fee7393125fa23c2354f",
-    measurementId: "G-B56B297SCK"
-  };
-firebase.initializeApp(firebaseConfig);
-var database = firebase.database();
+var frbs = undefined;
 var speed = 333;
 var timer;
-var usr;
-firebase.auth().signInAnonymously()
-.then((user) => {usr = user.user.uid});
+var database, usr;
+fetch('https://mrdgrd.herokuapp.com/get-firebase-credentials')
+.then((response) => {
+  if (response.status == 200)
+  return response.json();
+  else if (response.status == 401)
+  id("leaderboard").innerText = "Вы не можете получить доступ к базе данных с этого домена";
+})
+.then((d) => {
+  if (d) {
+    frbs = d;
+    firebase.initializeApp(frbs.firebaseConfig);
+    database = firebase.database();
+    firebase.auth().signInAnonymously()
+    .then((user) => {usr = user.user.uid});
+  }
+});
 
 const anime = {
   enabled: false,
@@ -453,7 +456,44 @@ window.onload = function() {
   }
 
   function updateScore() {
-    id("leaderboard").innerHTML = "";
+    if (frbs) {
+      id("leaderboard").innerHTML = "";
+      database.ref('tetris').once('value', function(snapshot) {
+          var data = snapshot.val();
+          var index = 0;
+          if (data != null) {
+            var scores = [];
+            snapshot.forEach(function(cSnapshot) {
+              var obj = cSnapshot.val();
+              obj.key = Object.keys(data)[index++];
+              scores.push(obj);
+            });
+            scores = quickSort(scores);
+            scores.forEach((d,ind)=>{
+              var block = document.createElement("div");
+              block.classList.add("player", "flexed");
+              if (usr == d.key) {
+                block.classList.add("your");
+              }
+              block.innerHTML = `<span>${scores.length-ind}. ${d.name}</span> <span>${d.score}</span>`;
+              id("leaderboard").prepend(block);
+            });
+            if (!anime.db && data[usr] && data[usr].images) {
+              for (const [key, val] of Object.entries(data[usr].images)) {
+                anime.opened.push(val);
+              }
+              cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
+              anime.opened.forEach(appendImage);
+            }
+            anime.db = true;
+          };
+        });
+      } else {
+        setTimeout(updateScore, 500);
+      }
+    }
+
+  function endgame() {
     document.body.style.setProperty("--col", tetris.colors[randomInt(tetris.colors.length)]);
     clearInterval(timer);
     console.log("seconds FROM start: " + tetris.stats.time);
@@ -466,39 +506,6 @@ window.onload = function() {
     Сбито строк: ${tetris.stats.rows}
     Время игры: ${m}:${s}
     `;
-    database.ref('tetris').once('value', function(snapshot) {
-        var data = snapshot.val();
-        var index = 0;
-        if (data != null) {
-          var scores = [];
-          snapshot.forEach(function(cSnapshot) {
-            var obj = cSnapshot.val();
-            obj.key = Object.keys(data)[index++];
-            scores.push(obj);
-          });
-          scores = quickSort(scores);
-          scores.forEach((d,ind)=>{
-            var block = document.createElement("div");
-            block.classList.add("player", "flexed");
-            if (usr == d.key) {
-              block.classList.add("your");
-            }
-            block.innerHTML = `<span>${scores.length-ind}. ${d.name}</span> <span>${d.score}</span>`;
-            id("leaderboard").prepend(block);
-          });
-          if (!anime.db && data[usr] && data[usr].images) {
-            for (const [key, val] of Object.entries(data[usr].images)) {
-              anime.opened.push(val);
-            }
-            cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
-            anime.opened.forEach(appendImage);
-          }
-          anime.db = true;
-        };
-      });
-    }
-
-  function endgame() {
     tetris.theEnd = true;
     id("overflow").changeVisible(true);
     id("overflowScore").innerText = tetris.stats.score;
@@ -647,6 +654,7 @@ window.onload = function() {
           database.ref('tetris/'+usr).update({
             name: nick,
             score: tetris.stats.score,
+            authKey: frbs.authKey,
         });
       }).then(updateScore);
     }

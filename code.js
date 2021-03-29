@@ -615,31 +615,22 @@ window.onload = function() {
     if (anime.enabled) {
       this.innerText = "Загружаю изображения";
       if (!anime.loaded || !anime.src.length) {
-        console.log("loading images")
-        var xhr = new XMLHttpRequest();
-        var url = 'https://www.reddit.com/r/hentai.json';
-        var num, array = [];
-        xhr.open('GET', url, true);
-        xhr.send();
-        xhr.onreadystatechange = function(res) {
-          var result = res.target.response;
-          try {
-            var json = JSON.parse(result);
+        console.log("loading images");
+        fetch("https://www.reddit.com/r/hentai.json").then(res=>{return res.json()}).then(json=>{
             Object.keys(json.data.children).forEach((el, ind, arr) => {
               num = arr.length;
               var obj = json.data.children[el];
-              if (obj.data.preview.enabled) {
+              if (obj.data.preview && obj.data.preview.enabled) {
                 var src = obj.data.preview.images[0].source.url.replace('amp;s', 's');
                 anime.src.push("https://rocky-retreat-60875.herokuapp.com/"+src);
               }
             });
             bg.src = anime.src[randomInt(anime.src.length)];
             anime.loaded = true;
-          } catch (e) {
-            this.innerText = "Заново";
-            console.warn("Some errors have appeared while loading images");
-          }
-        }
+        }).catch(e=>{
+          this.innerText = "Заново";
+          console.warn("Some errors have appeared while loading images", e);
+        });
       } else {
         bg.src = anime.src[randomInt(anime.src.length)];
       }

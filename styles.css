@@ -203,6 +203,7 @@ body {
 }
 
 #overflow #leaderboard {
+  position: relative;
   justify-content: start;
   flex-direction: column;
   text-align: center;
@@ -386,4 +387,39 @@ height: 22px;
 }
 #credits img {
   height: 1em;
+}
+
+#loading {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 84px; height: 84px;
+  transform: translate(-50%, -50%);
+}
+.circular-loader {
+  animation: rotate 2s linear infinite;
+  transform-origin: center center;
+}
+
+.loader-path {
+  stroke-dasharray: 150,200;
+  stroke-dashoffset: -10;
+  animation: dash 1.5s ease-in-out infinite, color 6s ease-in-out infinite;
+  stroke-linecap: round;
+}
+@keyframes rotate {
+  100% {transform: rotate(360deg);}
+}
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1,200;
+    stroke-dashoffset: 0;
+  }
+  50% {
+    stroke-dasharray: 89,200;
+    stroke-dashoffset: -35;
+  }
+  100% {
+    stroke-dasharray: 89,200;
+    stroke-dashoffset: -124;
+  }
 }

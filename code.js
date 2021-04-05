@@ -26,6 +26,7 @@ const anime = {
   progress: 1,
   opened: [],
   db: false,
+  last: null
 };
 
 function appendImage(src) {
@@ -69,9 +70,11 @@ function addImage(src) {
     var num = anime.opened.length;
     anime.opened.push(src);
     cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
-    database.ref('tetris/'+usr+'/images').update({
-      [num]: s,
-    });
+    if (frbs) {
+        database.ref('tetris/'+usr+'/images').update({
+        [num]: s,
+      });
+    }
   }
 }
 
@@ -616,13 +619,16 @@ window.onload = function() {
       this.innerText = "Загружаю изображения";
       if (!anime.loaded || !anime.src.length) {
         console.log("loading images");
-        fetch("https://www.reddit.com/r/hentai.json").then(res=>{return res.json()}).then(json=>{
+        let url = "https://www.reddit.com/r/hentai.json?limit=7";
+        if (anime.last) url += "&after="+anime.last;
+        fetch(url).then(res=>{return res.json()}).then(json=>{
             Object.keys(json.data.children).forEach((el, ind, arr) => {
               num = arr.length;
               var obj = json.data.children[el];
               if (obj.data.preview && obj.data.preview.enabled) {
                 var src = obj.data.preview.images[0].source.url.replace('amp;s', 's');
-                anime.src.push("https://rocky-retreat-60875.herokuapp.com/"+src);
+                anime.src.push(src);
+                anime.last = obj.data.name;
               }
             });
             bg.src = anime.src[randomInt(anime.src.length)];

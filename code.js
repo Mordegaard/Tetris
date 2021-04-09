@@ -2,37 +2,27 @@ var frbs = undefined;
 var speed = 333;
 var timer;
 var database, usr;
-fetch('https://mrdgrd.herokuapp.com/get-firebase-credentials')
-.then((response) => {
-  if (response.status == 200)
-  return response.json();
-  else if (response.status == 401)
-  id("leaderboard").innerText = "Вы не можете получить доступ к базе данных с этого домена";
-})
-.then((d) => {
-  if (d) {
-    frbs = d;
-    firebase.initializeApp(frbs.firebaseConfig);
-    database = firebase.database();
-    firebase.auth().signInAnonymously()
-    .then((user) => {usr = user.user.uid});
-  }
-});
 
 const anime = {
   enabled: false,
-  src: [],
+  src: {
+    fullSize: [],
+    thumbnail: [],
+  },
   loaded: false,
   progress: 1,
-  opened: [],
+  opened: {
+    fullSize: [],
+    thumbnail: [],
+  },
   db: false,
   last: null
 };
 
-function appendImage(src) {
+function appendImage(src, src2) {
   var href = document.createElement('a');
   href.setAttribute("href", src); href.setAttribute("target", "_blank");
-  href.style.background = `50% 50% / cover url("${src}")`;
+  href.style.background = `50% 50% / cover url("${src2}")`;
   href.innerHTML = `<img src="images/times.svg" class="remove-image-btn"/>`;
   id("images").append(href);
   href.tag("img")[0].addEventListener("click", function(e){
@@ -41,7 +31,7 @@ function appendImage(src) {
     database.ref('tetris/'+usr+'/images').once('value', snapshot => {
       var obj = snapshot.val(); ent = Object.entries(obj);
       for (const [key, val] of ent) {
-        if (val == src) {
+        if (val[0] == src) {
           index = parseInt(key);
           for (var i=index; i<ent.length-1; i++) {
             database.ref('tetris/'+usr+'/images').update({
@@ -53,33 +43,38 @@ function appendImage(src) {
       }
     }).then(()=>{
       if (index != undefined) {
-        anime.opened.splice(anime.opened.indexOf(src), 1);
-        cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
-        id("images").children[index].remove();
-        database.ref('tetris/'+usr+'/images/'+ent[ent.length-1][0]).remove();
+        database.ref('tetris/'+usr+'/images/'+(ent.length-1)).remove();
+        let i = anime.opened.fullSize.indexOf(src);
+        anime.opened.fullSize.splice(i, 1);
+        anime.opened.thumbnail.splice(i, 1);
+        cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.fullSize.length+"]";
+        id("images").children[i].remove();
       }
     });
   });
 }
 
 function addImage(src) {
-  anime.src.splice(anime.src.indexOf(src), 1);
-  if(!anime.opened.includes(src)) {
-    var s = src.replace("https://rocky-retreat-60875.herokuapp.com/", "");
-    appendImage(s);
-    var num = anime.opened.length;
-    anime.opened.push(src);
-    cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
+  let index = anime.src.fullSize.indexOf(src);
+  let s = src.replace("https://rocky-retreat-60875.herokuapp.com/", ""),
+      s2 = anime.src.thumbnail[index];
+  let num = anime.opened.fullSize.length;
+  anime.src.fullSize.splice(index, 1);
+  anime.src.thumbnail.splice(index, 1);
+  if(!anime.opened.fullSize.includes(src)) {
+    appendImage(s, s2);
+    anime.opened.fullSize.push(s); anime.opened.thumbnail.push(s2);
+    cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.fullSize.length+"]";
     if (frbs) {
         database.ref('tetris/'+usr+'/images').update({
-        [num]: s,
+        [num]: [s, s2],
       });
     }
   }
 }
 
 function UpdCol() {
-  while (anime.src != false) addImage(anime.src[0]);
+  while (anime.src.fullSize != false) addImage(anime.src.fullSize[0]);
 };
 
 window.onload = function() {
@@ -211,11 +206,12 @@ window.onload = function() {
     for (var x=0; x<tetris.block.w; x++) {
       for (var y=0; y<tetris.block.h; y++) {
         if (tetris.block.data[y][x] == 1) {
-          tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x] = 1;
           if (tetris.data[tetris.y+tetris.block.hw][tetris.x-tetris.block.w+tetris.block.hw+x] > 1) {
             endgame();
             return;
           }
+          tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x] = 1;
+
         }
       }
     }
@@ -384,11 +380,12 @@ window.onload = function() {
         }
       }
     }
+    if (tetris.stats.blocks) tetris.stats.score += 10;
     createBlock();
     getFinalPosition();
     if (tetris.theEnd) return;
+    tetris.stats.blocks++;
     if (rows > 1) tetris.stats.score += Math.floor(50 * (1+rows/2));
-    if (tetris.stats.blocks++) tetris.stats.score += 10;
     if (tetris.stats.score > anime.progress*1000) {
       anime.progress++;
       for (var i=0; i<anime.progress-1; i++) {
@@ -469,7 +466,7 @@ window.onload = function() {
             snapshot.forEach(function(cSnapshot) {
               var obj = cSnapshot.val();
               obj.key = Object.keys(data)[index++];
-              scores.push(obj);
+              if (obj.score) scores.push(obj);
             });
             scores = quickSort(scores);
             scores.forEach((d,ind)=>{
@@ -483,10 +480,16 @@ window.onload = function() {
             });
             if (!anime.db && data[usr] && data[usr].images) {
               for (const [key, val] of Object.entries(data[usr].images)) {
-                anime.opened.push(val);
+                if (Array.isArray(val)) {
+                  anime.opened.fullSize.push(val[0]);
+                  anime.opened.thumbnail.push(val[1]);
+                } else {
+                  anime.opened.fullSize.push(val);
+                  anime.opened.thumbnail.push(val);
+                }
               }
-              cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.length+"]";
-              anime.opened.forEach(appendImage);
+              cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.fullSize.length+"]";
+              for (let i=0; i<anime.opened.fullSize.length; i++) appendImage(anime.opened.fullSize[i], anime.opened.thumbnail[i]);
             }
             anime.db = true;
           };
@@ -617,7 +620,7 @@ window.onload = function() {
   id("restart").onclick = function() {
     if (anime.enabled) {
       this.innerText = "Загружаю изображения";
-      if (!anime.loaded || !anime.src.length) {
+      if (!anime.loaded || !anime.src.fullSize.length) {
         console.log("loading images");
         let url = "https://www.reddit.com/r/hentai.json?limit=7";
         if (anime.last) url += "&after="+anime.last;
@@ -626,19 +629,21 @@ window.onload = function() {
               num = arr.length;
               var obj = json.data.children[el];
               if (obj.data.preview && obj.data.preview.enabled) {
-                var src = obj.data.preview.images[0].source.url.replace('amp;s', 's');
-                anime.src.push(src);
+                let src1 = obj.data.preview.images[0].source.url.replace('amp;', ''),
+                    src2 = obj.data.preview.images[0].resolutions['0'].url.replaceAll('amp;', '');
+                anime.src.fullSize.push(src1);
+                anime.src.thumbnail.push(src2);
                 anime.last = obj.data.name;
               }
             });
-            bg.src = anime.src[randomInt(anime.src.length)];
+            bg.src = anime.src.fullSize[randomInt(anime.src.fullSize.length)];
             anime.loaded = true;
         }).catch(e=>{
           this.innerText = "Заново";
           console.warn("Some errors have appeared while loading images", e);
         });
       } else {
-        bg.src = anime.src[randomInt(anime.src.length)];
+        bg.src = anime.src.fullSize[randomInt(anime.src.fullSize.length)];
       }
     } else newgame();
   };
@@ -724,5 +729,22 @@ window.onload = function() {
   const texture2 = new Image();
   texture.src = "images/texture.png";
   texture2.src = "images/texture2.png";
-  texture.onload = endgame;
+
+  fetch('https://mrdgrd.herokuapp.com/get-firebase-credentials')
+  .then((response) => {
+    if (response.status == 200)
+    return response.json();
+    else if (response.status == 401) {
+      id("leaderboard").innerText = "Вы не можете получить доступ к базе данных с этого домена";
+    }
+  })
+  .then((d) => {
+    if (d) {
+      frbs = d;
+      firebase.initializeApp(frbs.firebaseConfig);
+      database = firebase.database();
+      firebase.auth().signInAnonymously()
+      .then((user) => {usr = user.user.uid; updateScore();});
+    }
+  });
 }

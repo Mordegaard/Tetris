@@ -2,9 +2,10 @@ var frbs = undefined;
 var speed = 333;
 var timer;
 var database, usr;
+var blocks;
+var endpoint = "https://mrdgrd.herokuapp.com";
 
 const anime = {
-  enabled: false,
   src: {
     fullSize: [],
     thumbnail: [],
@@ -19,6 +20,21 @@ const anime = {
   last: null
 };
 
+function generateToken() {
+  let str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let token = ""
+  for (let i=0; i<32; i++) {
+    token += str[randomInt(str.length)];
+  }
+  return token;
+}
+function login() {
+  usr = Cookies.get("userToken");
+  if (!usr) usr = generateToken();
+  Cookies.set("userToken", usr, 183);
+  console.log(usr);
+}
+
 function appendImage(src, src2) {
   var href = document.createElement('a');
   href.setAttribute("href", src); href.setAttribute("target", "_blank");
@@ -28,7 +44,7 @@ function appendImage(src, src2) {
   href.tag("img")[0].addEventListener("click", function(e){
     e.preventDefault();
     var index, ent;
-    database.ref('tetris/'+usr+'/images').once('value', snapshot => {
+    /*database.ref('tetris/'+usr+'/images').once('value', snapshot => {
       var obj = snapshot.val(); ent = Object.entries(obj);
       for (const [key, val] of ent) {
         if (val[0] == src) {
@@ -41,6 +57,14 @@ function appendImage(src, src2) {
           break;
         }
       }
+    });*/
+    fetch(endpoint+"/remove-image", {
+      method: "POST",
+      headers: {
+        'Authentication': usr,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({src: src})
     }).then(()=>{
       if (index != undefined) {
         database.ref('tetris/'+usr+'/images/'+(ent.length-1)).remove();
@@ -65,11 +89,21 @@ function addImage(src) {
     appendImage(s, s2);
     anime.opened.fullSize.push(s); anime.opened.thumbnail.push(s2);
     cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.fullSize.length+"]";
-    if (frbs) {
-        database.ref('tetris/'+usr+'/images').update({
-        [num]: [s, s2],
-      });
-    }
+    let obj = {
+      src1: s,
+      src2: s2,
+      num: num,
+    };
+    fetch(endpoint+"/add-image", {
+      method: "POST",
+      headers: {
+        'Authentication': usr,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(obj)
+    }).then(()=>{
+      console.log("image is successfully added to DB");
+    });
   }
 }
 
@@ -105,6 +139,12 @@ window.onload = function() {
       [[1,0],[1,0],[1,1]],
       [[0,1],[0,1],[1,1]],
     ],
+    nightmareBlocks: [
+      [[1,1,0],[0,1,0],[0,1,1]],
+      [[1,1],[1,0],[1,1]],
+      [[1]],
+      [[0,1,0],[1,1,1],[0,1,0]],
+    ],
     block: {
       w: 0,
       h: 0,
@@ -115,7 +155,8 @@ window.onload = function() {
     },
     nextBlock: null,
     colors: [
-      "#e04654", "#f1c421", "#5b81ea", "#52cc52", "#d844d8", "blueviolet", "#e87944"
+      "#e04654", "#f1c421", "#5b81ea", "#52cc52", "#d844d8", "blueviolet", "#e87944",
+      "darkred", "green", "#2ac0a5", "#483ca8"
     ],
     catch: {
       index: undefined,
@@ -127,13 +168,12 @@ window.onload = function() {
       score: 0,
       time: 0,
     },
-    mode: {
-      hentai: false,
-    }
+    mode: 0,
   };
+  tetris.nightmareBlocks = [...tetris.blocks, ...tetris.nightmareBlocks];
   tetris.nextBlock = randomInt(tetris.blocks.length);
 
-  function quickSort(arr) {
+  function quickSort(arr, val) {
     if (arr.length < 2) return arr;
     let min = 1;
     let max = arr.length - 1;
@@ -144,13 +184,13 @@ window.onload = function() {
     arr.splice(arr.indexOf(pivot), 1);
     arr = [pivot].concat(arr);
     for (let i = 1; i < arr.length; i++) {
-      if (pivot.score > arr[i].score) {
+      if (pivot[val] > arr[i][val]) {
         left.push(arr[i]);
       } else {
         right.push(arr[i]);
       }
     }
-    return quickSort(left).concat(pivot, quickSort(right));
+    return quickSort(left, val).concat(pivot, quickSort(right, val));
   }
 
   function rotateArray(matrix) {
@@ -180,23 +220,23 @@ window.onload = function() {
     tetris.speed = tetris.originalSpeed;
     if (!ct) {
       tetris.block.index = tetris.nextBlock;
-      tetris.nextBlock = randomInt(tetris.blocks.length);
+      tetris.nextBlock = randomInt(blocks.length);
     } else {
       var temp = tetris.block.index;
       tetris.block.index = tetris.catch.index;
       tetris.catch.index = temp;
     }
-    tetris.block.data = tetris.blocks[tetris.block.index].slice();
+    tetris.block.data = blocks[tetris.block.index].slice();
     tetris.block.w = tetris.block.data[0].length, tetris.block.h = tetris.block.data.length, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
     tetris.x = tetris.width / 2; tetris.y = tetris.block.hh;
-    var nX = tetris.blocks[tetris.nextBlock][0].length, nY = tetris.blocks[tetris.nextBlock].length;
+    var nX = blocks[tetris.nextBlock][0].length, nY = blocks[tetris.nextBlock].length;
     preview.width = nX * 20; preview.height = nY * 20;
     prv.fillStyle = "#282828";
     prv.fillRect(0,0,preview.width,preview.height);
     prv.strokeStyle = "white"; prv.fillStyle = tetris.colors[tetris.nextBlock];
     for (var y=0; y<nY; y++) {
       for (var x=0; x<nX; x++) {
-        if (tetris.blocks[tetris.nextBlock][y][x]) {
+        if (blocks[tetris.nextBlock][y][x]) {
           prv.fillRect(x*20,y*20,20,20);
           prv.drawImage(texture,x*20,y*20,20,20);
           prv.strokeRect(x*20,y*20,20,20);
@@ -302,14 +342,14 @@ window.onload = function() {
         getFinalPosition();
         draw();
       }
-      var nX = tetris.blocks[tetris.catch.index][0].length, nY = tetris.blocks[tetris.catch.index].length;
+      var nX = blocks[tetris.catch.index][0].length, nY = blocks[tetris.catch.index].length;
       ctch.width = nX * 20; ctch.height = nY * 20;
       cat.fillStyle = "#282828";
       cat.fillRect(0,0,ctch.width,ctch.height);
       cat.strokeStyle = "white"; cat.fillStyle = tetris.colors[tetris.catch.index];
       for (var y=0; y<nY; y++) {
         for (var x=0; x<nX; x++) {
-          if (tetris.blocks[tetris.catch.index][y][x]) {
+          if (blocks[tetris.catch.index][y][x]) {
             cat.fillRect(x*20,y*20,20,20);
             cat.drawImage(texture,x*20,y*20,20,20);
             cat.strokeRect(x*20,y*20,20,20);
@@ -335,7 +375,7 @@ window.onload = function() {
           ctx.strokeStyle = "white";
           if (tetris.data[y][x] == 1) {ctx.fillStyle = tetris.colors[tetris.block.index]; ctx.fillRect(s*x,s*y,s,s);}
           else if (tetris.data[y][x] > 1) {
-            if (anime.enabled) ctx.drawImage(bg, bgW*s*x,bgH*s*y,bgW*s,bgH*s, s*x,s*y,s,s);
+            if (tetris.mode == 1) ctx.drawImage(bg, bgW*s*x,bgH*s*y,bgW*s,bgH*s, s*x,s*y,s,s);
             else {
               ctx.fillStyle = tetris.colors[tetris.data[y][x]-2];
               ctx.fillRect(s*x,s*y,s,s);
@@ -456,48 +496,62 @@ window.onload = function() {
   }
 
   function updateScore() {
-    if (frbs) {
-      id("leaderboard").innerHTML = "";
-      database.ref('tetris').once('value', function(snapshot) {
-          var data = snapshot.val();
-          var index = 0;
-          if (data != null) {
-            var scores = [];
-            snapshot.forEach(function(cSnapshot) {
-              var obj = cSnapshot.val();
-              obj.key = Object.keys(data)[index++];
-              if (obj.score) scores.push(obj);
-            });
-            scores = quickSort(scores);
-            scores.forEach((d,ind)=>{
-              var block = document.createElement("div");
-              block.classList.add("player", "flexed");
-              if (usr == d.key) {
-                block.classList.add("your");
-              }
-              block.innerHTML = `<span>${scores.length-ind}. ${d.name}</span> <span>${d.score}</span>`;
-              id("leaderboard").prepend(block);
-            });
-            if (!anime.db && data[usr] && data[usr].images) {
-              for (const [key, val] of Object.entries(data[usr].images)) {
-                if (Array.isArray(val)) {
-                  anime.opened.fullSize.push(val[0]);
-                  anime.opened.thumbnail.push(val[1]);
-                } else {
-                  anime.opened.fullSize.push(val);
-                  anime.opened.thumbnail.push(val);
-                }
-              }
-              cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.fullSize.length+"]";
-              for (let i=0; i<anime.opened.fullSize.length; i++) appendImage(anime.opened.fullSize[i], anime.opened.thumbnail[i]);
-            }
-            anime.db = true;
-          };
+      fetch(endpoint+"/get-leaderboard", {
+        headers: {
+          Authentication: usr,
+        }
+      }).then(res=>{return res.json()}).then(obj=>{
+        id("leaderboard").innerHTML = "";
+        id("nightmareLeaderboard").innerHTML = "";
+        let scores = obj.scores, nightmareScores = obj.nightmareScores;
+        scores = quickSort(scores, "score");
+        nightmareScores = quickSort(nightmareScores, "score");
+        scores.forEach((d,ind)=>{
+          var block = document.createElement("div");
+          block.classList.add("player", "flexed");
+          if (d.you) {
+            id("nick").value = d.name;
+            block.classList.add("your");
+          }
+          block.innerHTML = `<span>${scores.length-ind}. ${d.name}</span> <span>${d.score}</span>`;
+          id("leaderboard").prepend(block);
         });
-      } else {
-        setTimeout(updateScore, 500);
-      }
+        nightmareScores.forEach((d,ind)=>{
+          var block = document.createElement("div");
+          block.classList.add("player", "flexed");
+          if (d.you) {
+            id("nick").value = d.name;
+            block.classList.add("your");
+          }
+          block.innerHTML = `<span>${nightmareScores.length-ind}. ${d.name}</span> <span>${d.score}</span>`;
+          id("nightmareLeaderboard").prepend(block);
+        });
+      });
     }
+
+  function getPhotos() {
+    fetch(endpoint+"/get-photos", {
+      headers: {
+        Authentication: usr,
+      }
+    }).then(res=>{return res.text()}).then(text=>{
+      if (!anime.db && text && text != "Unauthorized") {
+        obj = JSON.parse(text);
+        for (const [key, val] of Object.entries(obj)) {
+          if (Array.isArray(val)) {
+            anime.opened.fullSize.push(val[0]);
+            anime.opened.thumbnail.push(val[1]);
+          } else {
+            anime.opened.fullSize.push(val);
+            anime.opened.thumbnail.push(val);
+          }
+        }
+        cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.fullSize.length+"]";
+        for (let i=0; i<anime.opened.fullSize.length; i++) appendImage(anime.opened.fullSize[i], anime.opened.thumbnail[i]);
+      }
+      anime.db = true;
+    });
+  }
 
   function endgame() {
     document.body.style.setProperty("--col", tetris.colors[randomInt(tetris.colors.length)]);
@@ -514,8 +568,9 @@ window.onload = function() {
     `;
     tetris.theEnd = true;
     id("overflow").changeVisible(true);
-    id("overflowScore").innerText = tetris.stats.score;
-    if (tetris.stats.score >= 5000 && anime.enabled) {
+    if (tetris.mode != 2) id("overflowScore").innerText = tetris.stats.score;
+    else id("overflowScore").innerText = "Кошмар: " + tetris.stats.score;
+    if (tetris.stats.score >= 5000 && tetris.mode == 1) {
       var src = bg.src.replace("https://rocky-retreat-60875.herokuapp.com/", "");
       id("imageContainer").changeVisible(true);
       id("image").src = src;
@@ -526,6 +581,12 @@ window.onload = function() {
   }
 
   function newgame() {
+    if (tetris.mode != 2) {
+      blocks = tetris.blocks;
+    } else {
+      blocks = tetris.nightmareBlocks;
+    }
+    console.log(blocks, tetris.mode)
     tetris.theEnd = false;
     tetris.stats.time = 0;
     timer = setInterval(()=>{
@@ -538,7 +599,7 @@ window.onload = function() {
     id("addScore").changeVisible(true);
     id("form").changeVisible(false);
     animCanvas.changeVisible(false);
-    if (anime.enabled) cl("anime-canvas-container")[0].changeVisible(true);
+    if (tetris.mode == 1) cl("anime-canvas-container")[0].changeVisible(true);
     else cl("anime-canvas-container")[0].changeVisible(false);
     anime.progress = 1;
     [].forEach.call(progress, el => {el.changeVisible(false)});
@@ -618,7 +679,7 @@ window.onload = function() {
   };
 
   id("restart").onclick = function() {
-    if (anime.enabled) {
+    if (tetris.mode == 1) {
       this.innerText = "Загружаю изображения";
       if (!anime.loaded || !anime.src.fullSize.length) {
         console.log("loading images");
@@ -650,21 +711,41 @@ window.onload = function() {
 
   function submitScore(e) {
     e.preventDefault();
+    let s = "score";
+    let today = new Date();
+    let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+    let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    if (tetris.mode == 2) s = "nightmareScore";
     var nick = id("nick").value;
     if (nick) {
-        database.ref('tetris/'+usr).once('value', function(snapshot) {
-          database.ref('tetris/'+usr).update({
-            name: nick,
-            score: tetris.stats.score,
-            authKey: frbs.authKey,
-        });
+      let obj = {
+        name: nick,
+        [s]: tetris.stats.score,
+        date: date,
+        time: time,
+      }
+      fetch(endpoint+"/send-result", {
+        method: "POST",
+        headers: {
+          'Authentication': usr,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(obj)
       }).then(updateScore);
     }
     return false;
-  }
+  };
 
-  id("anime").addEventListener("input", function(){
-    anime.enabled = this.checked;
+  [].forEach.call(name("gamemode"), (item,i) => {
+    item.addEventListener("click", function() {
+      tetris.mode = i;
+    });
+  });
+  [].forEach.call(name("leaderboard"), (item,i) => {
+    item.addEventListener("click", function() {
+      [].forEach.call(cl("leaderboard"), (el,ind) => {el.changeVisible(false)});
+      cl("leaderboard")[i].changeVisible(true);
+    });
   });
 
   id("addScore").addEventListener("click", function(){
@@ -730,21 +811,7 @@ window.onload = function() {
   texture.src = "images/texture.png";
   texture2.src = "images/texture2.png";
 
-  fetch('https://mrdgrd.herokuapp.com/get-firebase-credentials')
-  .then((response) => {
-    if (response.status == 200)
-    return response.json();
-    else if (response.status == 401) {
-      id("leaderboard").innerText = "Вы не можете получить доступ к базе данных с этого домена";
-    }
-  })
-  .then((d) => {
-    if (d) {
-      frbs = d;
-      firebase.initializeApp(frbs.firebaseConfig);
-      database = firebase.database();
-      firebase.auth().signInAnonymously()
-      .then((user) => {usr = user.user.uid; updateScore();});
-    }
-  });
+  login();
+  endgame();
+  getPhotos();
 }

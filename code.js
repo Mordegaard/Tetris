@@ -32,7 +32,6 @@ function login() {
   usr = Cookies.get("userToken");
   if (!usr) usr = generateToken();
   Cookies.set("userToken", usr, 183);
-  console.log(usr);
 }
 
 function appendImage(src, src2) {
@@ -44,20 +43,6 @@ function appendImage(src, src2) {
   href.tag("img")[0].addEventListener("click", function(e){
     e.preventDefault();
     var index, ent;
-    /*database.ref('tetris/'+usr+'/images').once('value', snapshot => {
-      var obj = snapshot.val(); ent = Object.entries(obj);
-      for (const [key, val] of ent) {
-        if (val[0] == src) {
-          index = parseInt(key);
-          for (var i=index; i<ent.length-1; i++) {
-            database.ref('tetris/'+usr+'/images').update({
-              [i]: ent[i+1][1]
-            });
-          }
-          break;
-        }
-      }
-    });*/
     fetch(endpoint+"/remove-image", {
       method: "POST",
       headers: {
@@ -66,14 +51,11 @@ function appendImage(src, src2) {
       },
       body: JSON.stringify({src: src})
     }).then(()=>{
-      if (index != undefined) {
-        database.ref('tetris/'+usr+'/images/'+(ent.length-1)).remove();
         let i = anime.opened.fullSize.indexOf(src);
         anime.opened.fullSize.splice(i, 1);
         anime.opened.thumbnail.splice(i, 1);
         cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.fullSize.length+"]";
         id("images").children[i].remove();
-      }
     });
   });
 }
@@ -586,7 +568,6 @@ window.onload = function() {
     } else {
       blocks = tetris.nightmareBlocks;
     }
-    console.log(blocks, tetris.mode)
     tetris.theEnd = false;
     tetris.stats.time = 0;
     timer = setInterval(()=>{
@@ -723,6 +704,11 @@ window.onload = function() {
         [s]: tetris.stats.score,
         date: date,
         time: time,
+        lastStats: {
+          blocks: tetris.stats.blocks,
+          rows: tetris.stats.rows,
+          time: tetris.stats.time,
+        }
       }
       fetch(endpoint+"/send-result", {
         method: "POST",

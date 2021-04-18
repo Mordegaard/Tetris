@@ -320,6 +320,8 @@ height: 22px;
   position: relative;
   width: 100%;
   display: flex;
+  z-index: 0;
+  box-shadow: 0px 6px 16px -8px black;
 }
 #overflow #leaderboardTumbler label input {
   position: absolute;
@@ -400,6 +402,7 @@ height: 22px;
 #imageContainer {
   display: none;
   pointer-events: none;
+  z-index: 99;
 }
 #imageContainer.visible {
   display: initial;

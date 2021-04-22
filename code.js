@@ -123,8 +123,11 @@ window.onload = function() {
     ],
     nightmareBlocks: [
       [[1,1,0],[0,1,0],[0,1,1]],
-      [[1,1],[1,0],[1,1]],
+      [[0,1,1],[0,1,0],[1,1,0]],
+      [[1,1],[0,1],[1,1]],
       [[1]],
+      [[0,1,0,0],[1,1,1,1],[0,0,1,0]],
+      [[0,0,1,0],[1,1,1,1],[0,1,0,0]],
       [[0,1,0],[1,1,1],[0,1,0]],
     ],
     block: {
@@ -138,7 +141,7 @@ window.onload = function() {
     nextBlock: null,
     colors: [
       "#e04654", "#f1c421", "#5b81ea", "#52cc52", "#d844d8", "blueviolet", "#e87944",
-      "darkred", "green", "#2ac0a5", "#483ca8"
+      "darkred", "green", "#2ac0a5", "#483ca8", "#9183ca", "#bb2880", "#e24819"
     ],
     catch: {
       index: undefined,
@@ -153,7 +156,6 @@ window.onload = function() {
     mode: 0,
   };
   tetris.nightmareBlocks = [...tetris.blocks, ...tetris.nightmareBlocks];
-  tetris.nextBlock = randomInt(tetris.blocks.length);
 
   function quickSort(arr, val) {
     if (arr.length < 2) return arr;
@@ -498,6 +500,13 @@ window.onload = function() {
           block.innerHTML = `<span>${scores.length-ind}. ${d.name}</span> <span>${d.score}</span>`;
           id("leaderboard").prepend(block);
         });
+        setTimeout(()=>[].forEach.call(id("leaderboard").children, (el,ind)=>{
+          el.changeCSS({
+            'transition-delay': `${ind/20}s`,
+            'transform': 'none',
+            'opacity': '1',
+          });
+        }), 10);
         nightmareScores.forEach((d,ind)=>{
           var block = document.createElement("div");
           block.classList.add("player", "flexed");
@@ -516,7 +525,10 @@ window.onload = function() {
       headers: {
         Authentication: usr,
       }
-    }).then(res=>{return res.text()}).then(text=>{
+    }).then(res=>{
+      if (!res.ok) id("images").innerText = "Вы не можете получить доступ к личным данным с этого домена";
+      return res.text();
+    }).then(text=>{
       if (!anime.db && text && text != "Unauthorized") {
         obj = JSON.parse(text);
         for (const [key, val] of Object.entries(obj)) {
@@ -568,6 +580,7 @@ window.onload = function() {
     } else {
       blocks = tetris.nightmareBlocks;
     }
+    tetris.nextBlock = randomInt(blocks.length);
     tetris.theEnd = false;
     tetris.stats.time = 0;
     timer = setInterval(()=>{

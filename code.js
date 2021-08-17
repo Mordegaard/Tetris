@@ -1,9 +1,29 @@
-var frbs = undefined;
 var speed = 333;
 var timer;
-var database, usr;
+var usr;
 var blocks;
 var endpoint = "https://mrdgrd.herokuapp.com";
+const learning = false;
+var botValues = [0.8, 2.2, 6.1, 0.31];
+/*var botValues = [
+  [2, 2.3, 8.8, 0.4],
+  [2/2, 2.3/2, 8.8/2, 0.4/2],
+  [2/3, 2.3/3, 8.8/3, 0.4/3],
+  [2/4, 2.3/4, 8.8/4, 0.4/4],
+  [2/5, 2.3/5, 8.8/5, 0.4/5],
+  [2/6, 2.3/6, 8.8/6, 0.4/6],
+  [2/7, 2.3/7, 8.8/7, 0.4/7]
+];*/
+var bots = 0, botsNumber = 9;
+var scores = new Array(botsNumber);
+scores.fill(0);
+var previousBetterScore = 0;
+var previousHeight = 0;
+var times = 15;
+var botValuesReserved = botValues.slice();
+botValuesArray = new Array(botsNumber);
+botValuesArray.fill(botValues.slice());
+var currentBlock = 0;
 
 const anime = {
   src: {
@@ -121,6 +141,7 @@ window.onload = function() {
       [[1,0],[1,0],[1,1]],
       [[0,1],[0,1],[1,1]],
     ],
+    rotations: [2, 2, 1, 4, 2, 4, 4],
     nightmareBlocks: [
       [[1,1,0],[0,1,0],[0,1,1]],
       [[0,1,1],[0,1,0],[1,1,0]],
@@ -204,7 +225,10 @@ window.onload = function() {
     tetris.speed = tetris.originalSpeed;
     if (!ct) {
       tetris.block.index = tetris.nextBlock;
-      tetris.nextBlock = randomInt(blocks.length);
+      if (learning) {
+        if (++currentBlock == tetris.blocks.length) currentBlock = 0;
+         tetris.nextBlock = currentBlock;
+      } else tetris.nextBlock = randomInt(blocks.length);
     } else {
       var temp = tetris.block.index;
       tetris.block.index = tetris.catch.index;
@@ -239,106 +263,241 @@ window.onload = function() {
         }
       }
     }
+    if (tetris.mode == 3) botCheckPosition();
+  }
+
+  function botCheckPosition() {
+    function checkHeight() {
+      let max = 0;
+      let columns = new Array(tetris.width);
+      columns.fill(0);
+      for (let y=0; y<tetris.height; y++) {
+        for (let x=0; x<tetris.width; x++) {
+          if (tetris.data[y][x] > 2 || tetris.data[y][x] < 0) {
+            if (!max) max = tetris.height - y;
+            if (!columns[x]) columns[x] = tetris.height - y;
+          }
+        }
+      }
+      let peaks = 0;
+      let maxPeak = 0;
+      let middle = 0;
+      for (let i=0; i<columns.length-1; i++) {
+        middle += columns[i];
+        let newPeak = Math.abs(columns[i] - columns[i+1]);
+        if (newPeak > maxPeak) maxPeak = newPeak
+      }
+      middle += columns[columns.length-1]; middle /= columns.length;
+      return [max+middle, maxPeak];
+    }
+    function checkRows() {
+      let rows = 0;
+      for (let y=0; y<tetris.height; y++) {
+        let all = true;
+        for (let x=0; x<tetris.width; x++) {
+          if (tetris.data[y][x] == 0) all = false;
+        }
+        if (all) rows++;
+      }
+      return rows;
+    }
+    function checkRoofs() {
+      let roofs = 0;
+      for (let y=0; y<tetris.height-1; y++) {
+        for (let x=0; x<tetris.width; x++) {
+          if (tetris.data[y][x] < 0 && tetris.data[y+1][x] == 0) roofs++;
+        }
+      }
+      return roofs;
+    }
+    let resultsMain = [], resultsCatched = [], maxHeight = checkHeight()[0];
+
+    for (let r=0; r<tetris.rotations[tetris.block.index]; r++) {
+        tetris.block.data = rotateArray(tetris.block.data);
+        tetris.block.w = tetris.block.data[0].length, tetris.block.h = tetris.block.data.length, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
+        for (let x=tetris.block.w-tetris.block.hw; x+tetris.block.hw<tetris.width+1; x++) {
+            tetris.x = x;
+            getFinalPosition();
+            let score = 10;
+            let newHeight = checkHeight(), newRows = checkRows(), newRoofs = checkRoofs();
+            if (newHeight[0] > maxHeight) score -= 10 * newHeight[0] * newHeight[0] * botValues[0];
+            score += 10 * newRows * newRows * botValues[1];
+            score -= 10 * newRoofs * botValues[2];
+            score -= 10 * newHeight[1] * botValues[3];
+            resultsMain.push({x: x, score: score, rotate: r});
+        }
+    }
+    tetris.block.data = tetris.blocks[tetris.catch.index];
+    for (let r=0; r<tetris.rotations[tetris.catch.index]; r++) {
+        tetris.block.data = rotateArray(tetris.block.data);
+        tetris.block.w = tetris.block.data[0].length, tetris.block.h = tetris.block.data.length, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
+        for (let x=tetris.block.w-tetris.block.hw; x+tetris.block.hw<tetris.width+1; x++) {
+            tetris.x = x;
+            getFinalPosition();
+            let score = 10;
+            let newHeight = checkHeight(), newRows = checkRows(), newRoofs = checkRoofs();
+            if (newHeight[0] > maxHeight) score -= 10 * newHeight[0] * newHeight[0] * botValues[0];
+            score += 10 * newRows * newRows * botValues[1];
+            score -= 10 * newRoofs * botValues[2];
+            score -= 10 * newHeight[1] * botValues[3];
+            resultsCatched.push({x: x, score: score, rotate: r});
+        }
+    }
+    let maxMain = resultsMain[randomInt(resultsMain.length)];
+    for (let i=0; i<resultsMain.length; i++) {
+      if (resultsMain[i].score > maxMain.score) maxMain = resultsMain[i];
+    }
+    let maxCatched = resultsCatched[randomInt(resultsCatched.length)];
+    for (let i=0; i<resultsCatched.length; i++) {
+      if (resultsCatched[i].score > maxCatched.score) maxCatched = resultsCatched[i];
+    }
+    if (!tetris.catch.catched && maxCatched && maxCatched.score > maxMain.score) {catchBlock();}
+    else {
+      tetris.x = maxMain.x;
+      tetris.block.data = rotateArray(tetris.blocks[tetris.block.index]);
+      for (let r=0; r<maxMain.rotate; r++) tetris.block.data = rotateArray(tetris.block.data);
+      tetris.block.w = tetris.block.data[0].length, tetris.block.h = tetris.block.data.length, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
+      updateFrame();
+    }
+  }
+
+  function learnBot() {
+    tetris.mode = 3;
+    speed = 12;
+    if (bots == botsNumber - 1) {
+      bots = 0;
+      let index = 0, max = scores[index];
+      for (let i=1; i<scores.length; i++) {
+        if (scores[i] > max) {
+          max = scores[i]; index = i;
+        }
+      }
+      if (max > previousBetterScore) {
+        previousBetterScore = max;
+        botValuesReserved = botValuesArray[index].slice();
+        times--;
+        scores.fill(0);
+        console.log(`Конец поколения. Лучший результат у бота #${index}: ${max}`, botValuesReserved.slice());
+      } else {
+        previousBetterScore -= 200;
+        scores.fill(0);
+        console.log(`Поколение не очень, откат к генам предка. Макс. счёт поколения: ${max}. Макс. счёт предка: ${previousBetterScore}`, botValuesReserved.slice());
+      }
+    }
+    botValues = botValuesReserved.slice();
+    for (let i=0; i<botValues.length; i++) {
+      //for (let j=0; j<botValues[i].length; j++) botValues[i][j] += randomInt(-8,9)/100;
+      botValues[i] += randomInt(-16,17)/200;
+    }
+    botValuesArray[bots] = botValues.slice();
+    console.log(`Игра бота #${bots} из поколения ${times}`, botValues.slice());
+    if (times) setTimeout(newgame, speed*2);
+  }
+
+  function catchBlock() {
+    if (tetris.catch.index == undefined) {
+      tetris.catch.catched = true;
+      tetris.catch.index = tetris.block.index;
+      for (var x=0; x<tetris.width; x++) {
+        for (var y=0; y<tetris.height; y++) {
+          if (tetris.data[y][x] == 1) {tetris.data[y][x] = 0;}
+        }
+      }
+      createBlock();
+      if (tetris.mode != 3) getFinalPosition();
+      draw();
+    } else if (!tetris.catch.catched) {
+      tetris.catch.catched = true;
+      for (var x=0; x<tetris.width; x++) {
+        for (var y=0; y<tetris.height; y++) {
+          if (tetris.data[y][x] == 1) {tetris.data[y][x] = 0;}
+        }
+      }
+      createBlock(true);
+      if (tetris.mode != 3)  getFinalPosition();
+      draw();
+    }
+    var nX = blocks[tetris.catch.index][0].length, nY = blocks[tetris.catch.index].length;
+    ctch.width = nX * 20; ctch.height = nY * 20;
+    cat.fillStyle = "#282828";
+    cat.fillRect(0,0,ctch.width,ctch.height);
+    cat.strokeStyle = "white"; cat.fillStyle = tetris.colors[tetris.catch.index];
+    for (var y=0; y<nY; y++) {
+      for (var x=0; x<nX; x++) {
+        if (blocks[tetris.catch.index][y][x]) {
+          cat.fillRect(x*20,y*20,20,20);
+          cat.drawImage(texture,x*20,y*20,20,20);
+          cat.strokeRect(x*20,y*20,20,20);
+        }
+      }
+    }
   }
 
   document.addEventListener("keydown", function(e){
-    var block = false;
-    //console.log(e.keyCode)
-    if (!tetris.theEnd && (e.key == "ArrowLeft" || e.keyCode == 65) && tetris.x-tetris.block.w+tetris.block.hw > 0) {
-      for (var y=0; y<tetris.block.h; y++) {
-        for (var x=0; x<=tetris.block.w; x++) {
-          if (tetris.block.data[y][x] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x-1] > 1) block = true;
+    if (tetris.mode != 3) {
+      var block = false;
+      //console.log(e.keyCode)
+      if (!tetris.theEnd && (e.key == "ArrowLeft" || e.keyCode == 65) && tetris.x-tetris.block.w+tetris.block.hw > 0) {
+        for (var y=0; y<tetris.block.h; y++) {
+          for (var x=0; x<=tetris.block.w; x++) {
+            if (tetris.block.data[y][x] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x-1] > 1) block = true;
+          }
+        }
+        if (!block) {
+          tetris.x--;
+          getFinalPosition();
+          updateFrame();
         }
       }
-      if (!block) {
-        tetris.x--;
-        getFinalPosition();
-        updateFrame();
-      }
-    }
-    if (!tetris.theEnd && (e.key == "ArrowRight" || e.keyCode == 68) && tetris.x+tetris.block.hw < tetris.width) {
-      for (var y=0; y<tetris.block.h; y++) {
-        for (var x=0; x<=tetris.block.w; x++) {
-          if (tetris.block.data[y][x] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x+1] > 1) block = true;
+      if (!tetris.theEnd && (e.key == "ArrowRight" || e.keyCode == 68) && tetris.x+tetris.block.hw < tetris.width) {
+        for (var y=0; y<tetris.block.h; y++) {
+          for (var x=0; x<=tetris.block.w; x++) {
+            if (tetris.block.data[y][x] && tetris.data[tetris.y-tetris.block.hh+y][tetris.x-tetris.block.w+tetris.block.hw+x+1] > 1) block = true;
+          }
+        }
+        if (!block) {
+          tetris.x++;
+          getFinalPosition();
+          updateFrame();
         }
       }
-      if (!block) {
-        tetris.x++;
-        getFinalPosition();
-        updateFrame();
-      }
-    }
-    if (e.key == "ArrowUp" || e.keyCode == 87 && !tetris.theEnd) {
-      var rotate = true;
-      var block = rotateArray(tetris.block.data);
-      var block_h = block.length, block_w = block[0].length;
-      for (var y=0; y<block_h; y++) {
-        for (var x=0; x <block_w; x++) {
-          var X = tetris.x-block_w+Math.floor(block_w/2)+x, Y = tetris.y-Math.floor(block_h/2)+y;
-          if (block[y][x] && (tetris.data[Y][X] > 1 || tetris.data[Y][X] == undefined)) {rotate = false;}
-        }
-      }
-      if (rotate) {
-        tetris.block.data = block;
-        tetris.block.w = block_w, tetris.block.h = block_h, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
-        getFinalPosition();
-        updateFrame();
-      } else {
-        rotate = true;
+      if (e.key == "ArrowUp" || e.keyCode == 87 && !tetris.theEnd) {
+        var rotate = true;
+        var block = rotateArray(tetris.block.data);
+        var block_h = block.length, block_w = block[0].length;
         for (var y=0; y<block_h; y++) {
           for (var x=0; x <block_w; x++) {
-            var X = tetris.x-block_w+Math.floor(block_w/2)+x+1, Y = tetris.y-Math.floor(block_h/2)+y;
+            var X = tetris.x-block_w+Math.floor(block_w/2)+x, Y = tetris.y-Math.floor(block_h/2)+y;
             if (block[y][x] && (tetris.data[Y][X] > 1 || tetris.data[Y][X] == undefined)) {rotate = false;}
           }
         }
         if (rotate) {
           tetris.block.data = block;
-          tetris.x++;
           tetris.block.w = block_w, tetris.block.h = block_h, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
           getFinalPosition();
           updateFrame();
+        } else {
+          rotate = true;
+          for (var y=0; y<block_h; y++) {
+            for (var x=0; x <block_w; x++) {
+              var X = tetris.x-block_w+Math.floor(block_w/2)+x+1, Y = tetris.y-Math.floor(block_h/2)+y;
+              if (block[y][x] && (tetris.data[Y][X] > 1 || tetris.data[Y][X] == undefined)) {rotate = false;}
+            }
+          }
+          if (rotate) {
+            tetris.block.data = block;
+            tetris.x++;
+            tetris.block.w = block_w, tetris.block.h = block_h, tetris.block.hw = Math.floor(tetris.block.w/2), tetris.block.hh = Math.floor(tetris.block.h/2);
+            getFinalPosition();
+            updateFrame();
+          }
         }
       }
-    }
-    if (e.key == "ArrowDown" || e.keyCode == 83) {
-      tetris.speed = tetris.originalSpeed / 10;
-    }
-    if (e.keyCode == 32 && !tetris.theEnd) {
-      if (tetris.catch.index == undefined) {
-        tetris.catch.catched = true;
-        tetris.catch.index = tetris.block.index;
-        for (var x=0; x<tetris.width; x++) {
-          for (var y=0; y<tetris.height; y++) {
-            if (tetris.data[y][x] == 1) {tetris.data[y][x] = 0;}
-          }
-        }
-        createBlock();
-        getFinalPosition();
-        draw();
-      } else if (!tetris.catch.catched) {
-        tetris.catch.catched = true;
-        for (var x=0; x<tetris.width; x++) {
-          for (var y=0; y<tetris.height; y++) {
-            if (tetris.data[y][x] == 1) {tetris.data[y][x] = 0;}
-          }
-        }
-        createBlock(true);
-        getFinalPosition();
-        draw();
+      if (e.key == "ArrowDown" || e.keyCode == 83) {
+        tetris.speed = tetris.originalSpeed / 10;
       }
-      var nX = blocks[tetris.catch.index][0].length, nY = blocks[tetris.catch.index].length;
-      ctch.width = nX * 20; ctch.height = nY * 20;
-      cat.fillStyle = "#282828";
-      cat.fillRect(0,0,ctch.width,ctch.height);
-      cat.strokeStyle = "white"; cat.fillStyle = tetris.colors[tetris.catch.index];
-      for (var y=0; y<nY; y++) {
-        for (var x=0; x<nX; x++) {
-          if (blocks[tetris.catch.index][y][x]) {
-            cat.fillRect(x*20,y*20,20,20);
-            cat.drawImage(texture,x*20,y*20,20,20);
-            cat.strokeRect(x*20,y*20,20,20);
-          }
-        }
+      if (e.keyCode == 32 && !tetris.theEnd) {
+        catchBlock();
       }
     }
   });
@@ -392,7 +551,7 @@ window.onload = function() {
         }
         tetris.stats.rows++;
         rows++;
-        tetris.originalSpeed -= 2;
+        if (tetris.mode != 3) tetris.originalSpeed -= 2;
         tetris.stats.score += 50;
         for (var i=0; i<tetris.width; i++) tetris.data[y][i] = 0;
         for (var Y=y-1; Y>0; Y--) {
@@ -426,7 +585,7 @@ window.onload = function() {
     }
     id("score").innerText = "Ваш счёт: " + tetris.stats.score;
     draw();
-    setTimeout(fall, tetris.speed);
+      setTimeout(fall, tetris.speed);
     }
   }
 
@@ -476,7 +635,6 @@ window.onload = function() {
     }
     draw();
     initFigure();
-    //setTimeout(initFigure, tetris.speed);
   }
 
   function updateScore() {
@@ -548,30 +706,36 @@ window.onload = function() {
   }
 
   function endgame() {
-    document.body.style.setProperty("--col", tetris.colors[randomInt(tetris.colors.length)]);
-    clearInterval(timer);
-    console.log("seconds FROM start: " + tetris.stats.time);
-    var m = Math.floor(tetris.stats.time / 60);
-    if (m < 10) m = '0'+m;
-    var s = tetris.stats.time % 60;
-    if (s < 10) s = '0'+s;
-    id("stats").innerText = `
-    Всего фигур: ${tetris.stats.blocks}
-    Сбито строк: ${tetris.stats.rows}
-    Время игры: ${m}:${s}
-    `;
-    tetris.theEnd = true;
-    id("overflow").changeVisible(true);
-    if (tetris.mode != 2) id("overflowScore").innerText = tetris.stats.score;
-    else id("overflowScore").innerText = "Кошмар: " + tetris.stats.score;
-    if (tetris.stats.score >= 5000 && tetris.mode == 1) {
-      var src = bg.src.replace("https://rocky-retreat-60875.herokuapp.com/", "");
-      id("imageContainer").changeVisible(true);
-      id("image").src = src;
-      addImage(src);
-      setTimeout(()=>{id("imageContainer").changeVisible(false)}, 3000);
+    if (learning) {
+      tetris.theEnd = true;
+      scores[bots++] = tetris.stats.score;
+      learnBot();
+    } else {
+      document.body.style.setProperty("--col", tetris.colors[randomInt(tetris.colors.length)]);
+      clearInterval(timer);
+      console.log("seconds FROM start: " + tetris.stats.time);
+      var m = Math.floor(tetris.stats.time / 60);
+      if (m < 10) m = '0'+m;
+      var s = tetris.stats.time % 60;
+      if (s < 10) s = '0'+s;
+      id("stats").innerText = `
+      Всего фигур: ${tetris.stats.blocks}
+      Сбито строк: ${tetris.stats.rows}
+      Время игры: ${m}:${s}
+      `;
+      tetris.theEnd = true;
+      id("overflow").changeVisible(true);
+      if (tetris.mode != 2) id("overflowScore").innerText = tetris.stats.score;
+      else id("overflowScore").innerText = "Кошмар: " + tetris.stats.score;
+      if (tetris.stats.score >= 5000 && tetris.mode == 1) {
+        var src = bg.src.replace("https://rocky-retreat-60875.herokuapp.com/", "");
+        id("imageContainer").changeVisible(true);
+        id("image").src = src;
+        addImage(src);
+        setTimeout(()=>{id("imageContainer").changeVisible(false)}, 3000);
+      }
+      updateScore();
     }
-    updateScore();
   }
 
   function newgame() {
@@ -580,7 +744,8 @@ window.onload = function() {
     } else {
       blocks = tetris.nightmareBlocks;
     }
-    tetris.nextBlock = randomInt(blocks.length);
+    if (learning) {currentBlock = 0; tetris.nextBlock = currentBlock;}
+    else tetris.nextBlock = randomInt(blocks.length);
     tetris.theEnd = false;
     tetris.stats.time = 0;
     timer = setInterval(()=>{
@@ -597,7 +762,11 @@ window.onload = function() {
     else cl("anime-canvas-container")[0].changeVisible(false);
     anime.progress = 1;
     [].forEach.call(progress, el => {el.changeVisible(false)});
-    tetris.originalSpeed = speed; tetris.speed = speed;
+    if (tetris.mode == 3 && !learning) {
+      tetris.originalSpeed = speed*0.05; tetris.speed = speed*0.05;
+    } else {
+      tetris.originalSpeed = speed; tetris.speed = speed;
+    }
     tetris.stats.score = 0; tetris.stats.blocks = 0; tetris.stats.rows = 0;
     tetris.catch.index = undefined; tetris.catch.catch = false;
     tetris.data = new Array(tetris.height);
@@ -608,6 +777,7 @@ window.onload = function() {
       for (var x=0; x<tetris.width; x++) tetris.data[y][x] = 0;
     }
     initFigure();
+    if (tetris.mode == 3) catchBlock();
   }
 
   function median(values){
@@ -811,6 +981,8 @@ window.onload = function() {
   texture2.src = "images/texture2.png";
 
   login();
-  endgame();
+  if (learning) {
+    learnBot();
+  } else endgame();
   getPhotos();
 }

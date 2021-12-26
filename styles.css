@@ -189,21 +189,22 @@ body {
 }
 #overflow .newgame-container .gamemode-container span {
   padding: 0px 10px;
-  height: 30px;
-  border: 1px solid transparent;
+  line-height: 32px;
 }
 #overflow .newgame-container .gamemode-container input:checked ~ span {
-  color: var(--col);
+  background: var(--col);
   border-color: var(--col);
 }
 
 #overflow button {
-  background: none;
-  border: 1px solid white;
+  background: var(--col);
+  border: none;
   color: white;
   font-size: 24px;
   position: relative;
   outline: none;
+  text-shadow: 0px 0px 5px #00000060;
+  box-shadow: 2px 2px 16px -12px black;
 }
 #overflow .leaderboard-container, #overflow .images-container {
   position: relative;
@@ -268,6 +269,7 @@ body {
   justify-content: space-between;
   margin: 5px 0px;
   text-align: left;
+  text-shadow: 0px 0px 5px #00000060;
 }
 #overflow #leaderboard .player {
   transform: translateY(50px);
@@ -347,6 +349,7 @@ height: 22px;
   text-align: center;
   background: #4a4a4a;
   font-weight: 800;
+  text-shadow: 0px 0px 5px #00000060;
 }
 #overflow #leaderboardTumbler label input:checked + span {
   background: var(--col);

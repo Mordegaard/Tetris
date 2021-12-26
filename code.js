@@ -1,9 +1,9 @@
-var frbs = undefined;
 var speed = 333;
 var timer;
 var database, usr;
 var blocks;
 var endpoint = "https://mrdgrd.herokuapp.com";
+//var endpoint = "http://localhost:1337";
 
 const anime = {
   src: {
@@ -42,11 +42,9 @@ function appendImage(src, src2) {
   id("images").append(href);
   href.tag("img")[0].addEventListener("click", function(e){
     e.preventDefault();
-    var index, ent;
-    fetch(endpoint+"/remove-image", {
-      method: "POST",
+    fetch(`${endpoint}/tetris/user/${usr}/images`, {
+      method: "DELETE",
       headers: {
-        'Authentication': usr,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({src: src})
@@ -76,15 +74,12 @@ function addImage(src) {
       src2: s2,
       num: num,
     };
-    fetch(endpoint+"/add-image", {
+    fetch(`${endpoint}/tetris/user/${usr}/images`, {
       method: "POST",
       headers: {
-        'Authentication': usr,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(obj)
-    }).then(()=>{
-      console.log("image is successfully added to DB");
     });
   }
 }
@@ -156,26 +151,6 @@ window.onload = function() {
     mode: 0,
   };
   tetris.nightmareBlocks = [...tetris.blocks, ...tetris.nightmareBlocks];
-
-  function quickSort(arr, val) {
-    if (arr.length < 2) return arr;
-    let min = 1;
-    let max = arr.length - 1;
-    let rand = Math.floor(min + Math.random() * (max + 1 - min));
-    let pivot = arr[rand];
-    const left = [];
-    const right = [];
-    arr.splice(arr.indexOf(pivot), 1);
-    arr = [pivot].concat(arr);
-    for (let i = 1; i < arr.length; i++) {
-      if (pivot[val] > arr[i][val]) {
-        left.push(arr[i]);
-      } else {
-        right.push(arr[i]);
-      }
-    }
-    return quickSort(left, val).concat(pivot, quickSort(right, val));
-  }
 
   function rotateArray(matrix) {
     let result = [];
@@ -480,26 +455,42 @@ window.onload = function() {
   }
 
   function updateScore() {
-      fetch(endpoint+"/get-leaderboard", {
-        headers: {
-          Authentication: usr,
-        }
-      }).then(res=>{return res.json()}).then(obj=>{
+      fetch(`${endpoint}/tetris/leaderboard/${usr}`)
+      .then(res=>{return res.json()})
+      .then(obj=>{
         id("leaderboard").innerHTML = "";
         id("nightmareLeaderboard").innerHTML = "";
-        let scores = obj.scores, nightmareScores = obj.nightmareScores;
-        scores = quickSort(scores, "score");
-        nightmareScores = quickSort(nightmareScores, "score");
-        scores.forEach((d,ind)=>{
-          var block = document.createElement("div");
+
+        const scores = obj
+          .filter(user => user.score && user.name)
+          .sort((a, b) => a.score - b.score);
+
+        const nightmareScores = obj
+          .filter(user => user.nightmareScore && user.name)
+          .sort((a, b) => a.nightmareScore - b.nightmareScore);
+
+        scores.forEach((user, ind) => {
+          const block = document.createElement("div");
           block.classList.add("player", "flexed");
-          if (d.you) {
-            id("nick").value = d.name;
+          if (user.you) {
+            id("nick").value = user.name;
             block.classList.add("your");
           }
-          block.innerHTML = `<span>${scores.length-ind}. ${d.name}</span> <span>${d.score}</span>`;
+          block.innerHTML = `<span>${scores.length-ind}. ${user.name}</span> <span>${user.score}</span>`;
           id("leaderboard").prepend(block);
         });
+
+        nightmareScores.forEach((user, ind) => {
+          var block = document.createElement("div");
+          block.classList.add("player", "flexed");
+          if (user.you) {
+            id("nick").value = user.name;
+            block.classList.add("your");
+          }
+          block.innerHTML = `<span>${nightmareScores.length-ind}. ${user.name}</span> <span>${user.nightmareScore}</span>`;
+          id("nightmareLeaderboard").prepend(block);
+        });
+
         setTimeout(()=>[].forEach.call(id("leaderboard").children, (el,ind)=>{
           el.changeCSS({
             'transition-delay': `${ind/20}s`,
@@ -507,42 +498,24 @@ window.onload = function() {
             'opacity': '1',
           });
         }), 10);
-        nightmareScores.forEach((d,ind)=>{
-          var block = document.createElement("div");
-          block.classList.add("player", "flexed");
-          if (d.you) {
-            id("nick").value = d.name;
-            block.classList.add("your");
-          }
-          block.innerHTML = `<span>${nightmareScores.length-ind}. ${d.name}</span> <span>${d.score}</span>`;
-          id("nightmareLeaderboard").prepend(block);
-        });
       });
     }
 
   function getPhotos() {
-    fetch(endpoint+"/get-photos", {
-      headers: {
-        Authentication: usr,
-      }
-    }).then(res=>{
-      if (!res.ok) id("images").innerText = "Вы не можете получить доступ к личным данным с этого домена";
-      return res.text();
-    }).then(text=>{
-      if (!anime.db && text && text != "Unauthorized") {
-        obj = JSON.parse(text);
-        for (const [key, val] of Object.entries(obj)) {
-          if (Array.isArray(val)) {
-            anime.opened.fullSize.push(val[0]);
-            anime.opened.thumbnail.push(val[1]);
-          } else {
-            anime.opened.fullSize.push(val);
-            anime.opened.thumbnail.push(val);
-          }
-        }
+    fetch(`${endpoint}/tetris/user/${usr}`).then(res=>{
+      if (!res.ok) return null;
+      return res.json();
+    }).then(obj=>{
+      if (!anime.db && obj !== null) {
+        const { images } = obj;
+        Object.keys(images).forEach(key => {
+          anime.opened.fullSize.push(images[key][0]);
+          anime.opened.thumbnail.push(images[key][1]);
+        });
+
         cl("images-container")[0].cl("title")[0].innerText = "Открытые изображения ["+anime.opened.fullSize.length+"]";
         for (let i=0; i<anime.opened.fullSize.length; i++) appendImage(anime.opened.fullSize[i], anime.opened.thumbnail[i]);
-      }
+      } else id("images").innerText = "Что-то пошло не так";
       anime.db = true;
     });
   }
@@ -705,28 +678,22 @@ window.onload = function() {
 
   function submitScore(e) {
     e.preventDefault();
-    let s = "score";
-    let today = new Date();
-    let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
-    let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
-    if (tetris.mode == 2) s = "nightmareScore";
-    var nick = id("nick").value;
+    let today = new Date().getTime();
+    let nick = id("nick").value;
     if (nick) {
       let obj = {
         name: nick,
-        [s]: tetris.stats.score,
-        date: date,
-        time: time,
+        [tetris.mode === 2 ? 'nightmareScore' : 'score']: tetris.stats.score,
+        date: today,
         lastStats: {
           blocks: tetris.stats.blocks,
           rows: tetris.stats.rows,
           time: tetris.stats.time,
         }
       }
-      fetch(endpoint+"/send-result", {
+      fetch(`${endpoint}/tetris/user/${usr}`, {
         method: "POST",
         headers: {
-          'Authentication': usr,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(obj)

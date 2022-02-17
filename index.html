@@ -52,8 +52,8 @@
         <div class="leaderboard-container flexed visible">
           <span class="title">Таблица лидеров</span>
           <div id="leaderboardTumbler">
-            <label><input type="radio" checked name="leaderboard"/><span>Обычный</span></label>
-            <label><input type="radio" name="leaderboard"/><span>Кошмар</span></label>
+            <label><input type="radio" checked name="leaderboard"/><span>Default</span></label>
+            <label><input type="radio" name="leaderboard"/><span>Competitive</span></label>
           </div>
           <div id="leaderboard" class=" leaderboard flexed visible">
             <div id="loading">
@@ -61,8 +61,6 @@
                 <circle class="loader-path" cx="50" cy="50" r="20" fill="none" stroke="var(--col)" stroke-width="4" />
               </svg>
             </div>
-          </div>
-          <div id="nightmareLeaderboard" class="leaderboard flexed">
           </div>
           <div class="addscore-container flexed">
             <button id="addScore" class="visible">Добавить свой счёт</button>
@@ -89,7 +87,7 @@
             <div class="game-modes">
               <label class="gamemode-container flexed"><input type="radio" name="gamemode" checked/><div></div><span>Default Mode</span></label>
               <label class="gamemode-container flexed"><input type="radio" name="gamemode"/><div></div><span>Hentai Mode</span></label>
-              <label class="gamemode-container flexed"><input type="radio" name="gamemode"/><div></div><span>Nightmare Mode</span></label>
+              <label class="gamemode-container flexed"><input type="radio" name="gamemode"/><div></div><span>Competitive Mode</span></label>
             </div>
           <div class="restart-container flexed"><button id="restart">Начать игру</button></div>
         </div>
@@ -98,10 +96,6 @@
         <div class="godrays"></div>
         <img id="image"/>
       </div>
-    </div>
-    <div id="sound">
-      <img class="mute" src="images/volume-mute.svg"/>
-      <img class="up" src="images/volume-up.svg"/>
     </div>
     <svg
       id="imageBg"

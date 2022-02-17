@@ -1,6 +1,6 @@
 var speed = 333;
 var timer;
-var database, usr;
+var usr;
 var blocks;
 var endpoint = "https://mrdgrd.herokuapp.com";
 //var endpoint = "http://localhost:1337";
@@ -116,15 +116,6 @@ window.onload = function() {
       [[1,0],[1,0],[1,1]],
       [[0,1],[0,1],[1,1]],
     ],
-    nightmareBlocks: [
-      [[1,1,0],[0,1,0],[0,1,1]],
-      [[0,1,1],[0,1,0],[1,1,0]],
-      [[1,1],[0,1],[1,1]],
-      [[1]],
-      [[0,1,0,0],[1,1,1,1],[0,0,1,0]],
-      [[0,0,1,0],[1,1,1,1],[0,1,0,0]],
-      [[0,1,0],[1,1,1],[0,1,0]],
-    ],
     block: {
       w: 0,
       h: 0,
@@ -135,8 +126,7 @@ window.onload = function() {
     },
     nextBlock: null,
     colors: [
-      "#e04654", "#f1c421", "#5b81ea", "#52cc52", "#d844d8", "blueviolet", "#e87944",
-      "darkred", "green", "#2ac0a5", "#483ca8", "#9183ca", "#bb2880", "#e24819"
+      "#e04654", "#f1c421", "#5b81ea", "#52cc52", "#d844d8", "blueviolet", "#e87944"
     ],
     catch: {
       index: undefined,
@@ -150,7 +140,6 @@ window.onload = function() {
     },
     mode: 0,
   };
-  tetris.nightmareBlocks = [...tetris.blocks, ...tetris.nightmareBlocks];
 
   function rotateArray(matrix) {
     let result = [];
@@ -352,7 +341,6 @@ window.onload = function() {
   function initFigure() {
     if (!tetris.theEnd) {
     tetris.catch.catched = false;
-    var sound = true;
     var rows = 0;
     for (var y=0; y<tetris.height; y++) {
       var row = true;
@@ -361,10 +349,6 @@ window.onload = function() {
         if (!tetris.data[y][x]) row = false;
       }
       if (row) {
-        if (sound && sounds.enabled) {
-          sound = false;
-          sounds.files[randomInt(sounds.count)].play();
-        }
         tetris.stats.rows++;
         rows++;
         tetris.originalSpeed -= 2;
@@ -459,15 +443,10 @@ window.onload = function() {
       .then(res=>{return res.json()})
       .then(obj=>{
         id("leaderboard").innerHTML = "";
-        id("nightmareLeaderboard").innerHTML = "";
 
         const scores = obj
           .filter(user => user.score && user.name)
           .sort((a, b) => a.score - b.score);
-
-        const nightmareScores = obj
-          .filter(user => user.nightmareScore && user.name)
-          .sort((a, b) => a.nightmareScore - b.nightmareScore);
 
         scores.forEach((user, ind) => {
           const block = document.createElement("div");
@@ -478,17 +457,6 @@ window.onload = function() {
           }
           block.innerHTML = `<span>${scores.length-ind}. ${user.name}</span> <span>${user.score}</span>`;
           id("leaderboard").prepend(block);
-        });
-
-        nightmareScores.forEach((user, ind) => {
-          var block = document.createElement("div");
-          block.classList.add("player", "flexed");
-          if (user.you) {
-            id("nick").value = user.name;
-            block.classList.add("your");
-          }
-          block.innerHTML = `<span>${nightmareScores.length-ind}. ${user.name}</span> <span>${user.nightmareScore}</span>`;
-          id("nightmareLeaderboard").prepend(block);
         });
 
         setTimeout(()=>[].forEach.call(id("leaderboard").children, (el,ind)=>{
@@ -548,11 +516,7 @@ window.onload = function() {
   }
 
   function newgame() {
-    if (tetris.mode != 2) {
-      blocks = tetris.blocks;
-    } else {
-      blocks = tetris.nightmareBlocks;
-    }
+    blocks = tetris.blocks;
     tetris.nextBlock = randomInt(blocks.length);
     tetris.theEnd = false;
     tetris.stats.time = 0;
@@ -683,7 +647,7 @@ window.onload = function() {
     if (nick) {
       let obj = {
         name: nick,
-        [tetris.mode === 2 ? 'nightmareScore' : 'score']: tetris.stats.score,
+        score: tetris.stats.score,
         date: today,
         lastStats: {
           blocks: tetris.stats.blocks,
@@ -734,43 +698,6 @@ window.onload = function() {
   });
   id("form").addEventListener("submit", submitScore);
   id("sendResult").addEventListener("click", submitScore);
-
-  const sounds = {
-    files: [
-      new Audio(),
-      new Audio(),
-      new Audio(),
-      new Audio(),
-      new Audio(),
-      new Audio(),
-      new Audio(),
-      new Audio(),
-      new Audio(),
-      new Audio(),
-    ],
-    count: 10,
-    enabled: false,
-  }
-  sounds.files[0].src = "sounds/Its so fucking deep.mp3";
-  sounds.files[1].src = "sounds/Headshot.mp3";
-  sounds.files[2].src = "sounds/Spank.mp3";
-  sounds.files[3].src = "sounds/Thats amazing.mp3";
-  sounds.files[4].src = "sounds/hurt.mp3";
-  sounds.files[5].src = "sounds/unstoppable.mp3";
-  sounds.files[6].src = "sounds/hit.mp3";
-  sounds.files[7].src = "sounds/tanks.m4a";
-  sounds.files[8].src = "sounds/slidan.m4a";
-  sounds.files[9].src = "sounds/WOO.mp3";
-
-  id("sound").addEventListener("click", function(){
-    if (sounds.enabled) {
-      sounds.enabled = false;
-      this.changeVisible(false);
-    } else {
-      sounds.enabled = true;
-      this.changeVisible(true);
-    }
-  });
 
   const texture =  new Image();
   const texture2 = new Image();

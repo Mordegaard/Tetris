@@ -5,15 +5,6 @@ var blocks;
 var endpoint = "https://mrdgrd.herokuapp.com";
 const learning = false;
 var botValues = [0.8, 2.2, 6.1, 0.31];
-/*var botValues = [
-  [2, 2.3, 8.8, 0.4],
-  [2/2, 2.3/2, 8.8/2, 0.4/2],
-  [2/3, 2.3/3, 8.8/3, 0.4/3],
-  [2/4, 2.3/4, 8.8/4, 0.4/4],
-  [2/5, 2.3/5, 8.8/5, 0.4/5],
-  [2/6, 2.3/6, 8.8/6, 0.4/6],
-  [2/7, 2.3/7, 8.8/7, 0.4/7]
-];*/
 var bots = 0, botsNumber = 9;
 var scores = new Array(botsNumber);
 scores.fill(0);
@@ -305,7 +296,12 @@ window.onload = function() {
       let roofs = 0;
       for (let y=0; y<tetris.height-1; y++) {
         for (let x=0; x<tetris.width; x++) {
-          if (tetris.data[y][x] < 0 && tetris.data[y+1][x] == 0) roofs++;
+          if (tetris.data[y][x] < 0 && tetris.data[y+1][x] == 0) {
+            for (let j=y; j<tetris.height; j++) {
+              if (tetris.data[y+1][x] == 0) roofs++;
+            }
+            roofs++;
+          }
         }
       }
       return roofs;
@@ -363,7 +359,7 @@ window.onload = function() {
 
   function learnBot() {
     tetris.mode = 3;
-    speed = 12;
+    speed = 0;
     if (bots == botsNumber - 1) {
       bots = 0;
       let index = 0, max = scores[index];
